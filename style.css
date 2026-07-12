@@ -136,13 +136,42 @@ h1.page-title { font-family: var(--font-display); font-size: 42px; color: var(--
   border-radius: 10px;
   overflow: hidden;
   margin-top: 24px;
+  padding-bottom: 28px;
 }
 .viewer-top {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px; color: #e9e1c8; font-size: 14px;
 }
 .viewer-top a { font-weight: 600; opacity: 0.9; }
-.viewer-frame { width: 100%; height: 82vh; border: none; background: #fff; }
+.viewer-part-label { font-family: var(--font-display); font-size: 18px; color: var(--gold-soft); }
+.viewer-page-counter { opacity: 0.7; }
+
+.pdf-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  min-height: 60vh;
+}
+.pdf-canvas {
+  max-width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  background: #fff;
+}
+.page-nav-btn {
+  flex: 0 0 auto;
+  background: rgba(237, 230, 211, 0.12);
+  color: #f1ead7;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 24px;
+  line-height: 1;
+}
+.page-nav-btn:hover { background: rgba(237, 230, 211, 0.22); }
 
 .state-msg { padding: 40px 0; opacity: 0.75; }
 .state-msg.error { color: #a33; }
