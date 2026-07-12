@@ -3,6 +3,38 @@ const API_ROOT = `https://api.github.com/repos/${cfg.githubOwner}/${cfg.githubRe
 const RAW_ROOT = `https://raw.githubusercontent.com/${cfg.githubOwner}/${cfg.githubRepo}/${cfg.githubBranch}`;
 const PROGRESS_PREFIX = "qaw:progress:";
 
+// Verified, structured Quran text data (not OCR) from the open-source
+// fawazahmed0/quran-api project, served via GitHub raw (same trusted host
+// used for our own PDFs). Three editions combined per verse:
+//  - Arabic Uthmani text (source: tanzil.net, the standard reference text)
+//  - Roman transliteration of the Arabic recitation (source: tanzil.net)
+//  - Roman Urdu translation by Abul Ala Maududi (source: quranromanurdu.com)
+const QTEXT_ROOT = "https://raw.githubusercontent.com/fawazahmed0/quran-api/1/editions";
+const QTEXT_EDITIONS = {
+  arabic: "ara-quranuthmanihaf1",
+  transliteration: "ara-quran-la",
+  urdu: "urd-abulaalamaududi-la",
+};
+const QURAN_TEXT_BOOK_SLUG = "quran-roman-urdu-hindi";
+
+const SURAH_NAMES = [
+  null, "Al-Fatihah", "Al-Baqarah", "Aal-e-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf",
+  "Al-Anfal", "At-Tawbah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl",
+  "Al-Isra", "Al-Kahf", "Maryam", "Ta-Ha", "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan",
+  "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-Ankabut", "Ar-Rum", "Luqman", "As-Sajdah", "Al-Ahzab",
+  "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir", "Fussilat", "Ash-Shuraa",
+  "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
+  "Adh-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadila",
+  "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq",
+  "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn", "Al-Muzzammil",
+  "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "Abasa",
+  "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la",
+  "Al-Ghashiyah", "Al-Fajr", "Al-Balad", "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin",
+  "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat", "Al-Qari'ah", "At-Takathur",
+  "Al-Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr",
+  "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas",
+];
+
 const app = document.getElementById("app");
 
 document.title = cfg.siteTitle;
@@ -144,6 +176,15 @@ async function renderBook(bookSlug) {
     );
   }
 
+  if (bookSlug === QURAN_TEXT_BOOK_SLUG) {
+    main.appendChild(
+      el("a", { class: "text-mode-banner", href: "#/quran-text/1" }, [
+        el("span", {}, "\u0627 Read as typed text"),
+        el("span", { class: "continue-banner-detail" }, "Arabic \u00b7 transliteration \u00b7 Urdu translation \u2014 no scanned pages"),
+      ])
+    );
+  }
+
   const listWrap = el("div");
   main.appendChild(listWrap);
   renderLoading(listWrap);
@@ -234,20 +275,29 @@ async function renderPart(bookSlug, fileName, startPage) {
     rendering = true;
     const page = await pdfDoc.getPage(num);
 
-    const isNarrow = window.innerWidth < 640;
-    const sidePadding = isNarrow ? 16 : 48;
-    const containerWidth = Math.min(canvasWrap.clientWidth - sidePadding, 900);
+    // Fixed small padding only - the nav buttons intentionally float over
+    // the page rather than reserving their own column, on both mobile and
+    // desktop, so this doesn't need to change per device.
+    const availableWidth = canvasWrap.clientWidth - 24;
+    const desktopCap = 820; // comfortable single-page reading width
+    const containerWidth = Math.max(240, Math.min(availableWidth, desktopCap));
+
     const baseViewport = page.getViewport({ scale: 1 });
     const fitScale = containerWidth / baseViewport.width;
     const scale = zoomed ? fitScale * 1.9 : fitScale;
     const viewport = page.getViewport({ scale });
 
     // Render at device pixel ratio so text stays crisp on phone screens.
+    // The canvas's backing store (width/height attributes) is scaled by
+    // dpr; its displayed CSS size (style.width/height) is not - these are
+    // set as the only source of truth for display size, with no competing
+    // CSS max-width/auto rules, to avoid the browser recomputing a
+    // different size than we intended.
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.floor(viewport.width * dpr);
     canvas.height = Math.floor(viewport.height * dpr);
-    canvas.style.width = `${viewport.width}px`;
-    canvas.style.height = `${viewport.height}px`;
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
 
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -347,11 +397,94 @@ async function renderPart(bookSlug, fileName, startPage) {
   }
 }
 
+async function fetchJuz(editionSlug, juzNumber) {
+  const url = `${QTEXT_ROOT}/${editionSlug}/juzs/${juzNumber}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Couldn't load text data (${res.status})`);
+  const data = await res.json();
+  return data.juzs;
+}
+
+async function renderQuranText(juzNumber) {
+  app.innerHTML = "";
+  juzNumber = Math.max(1, Math.min(juzNumber, 30));
+
+  const crumb = el("p", { class: "crumb" }, [
+    el("a", { href: "#/" }, "Library"),
+    " / ",
+    el("a", { href: `#/book/${encodeURIComponent(QURAN_TEXT_BOOK_SLUG)}` }, "Quran Roman Urdu Hindi"),
+    ` / Juz ${juzNumber} (typed text)`,
+  ]);
+
+  const topBar = el("div", { class: "text-top-bar" }, [
+    el(
+      "a",
+      { class: "text-nav-link", href: juzNumber > 1 ? `#/quran-text/${juzNumber - 1}` : "#", "aria-disabled": juzNumber <= 1 },
+      "\u2039 Juz " + (juzNumber - 1)
+    ),
+    el("span", { class: "text-juz-label" }, `Juz ${juzNumber}`),
+    el(
+      "a",
+      { class: "text-nav-link", href: juzNumber < 30 ? `#/quran-text/${juzNumber + 1}` : "#", "aria-disabled": juzNumber >= 30 },
+      "Juz " + (juzNumber + 1) + " \u203a"
+    ),
+  ]);
+
+  const versesWrap = el("div", { class: "verses-wrap" });
+  renderLoading(versesWrap);
+
+  const wrap = el("div", { class: "container text-container" }, [crumb, topBar, versesWrap]);
+  app.appendChild(el("main", {}, wrap));
+
+  try {
+    const [arabic, translit, urdu] = await Promise.all([
+      fetchJuz(QTEXT_EDITIONS.arabic, juzNumber),
+      fetchJuz(QTEXT_EDITIONS.transliteration, juzNumber),
+      fetchJuz(QTEXT_EDITIONS.urdu, juzNumber),
+    ]);
+
+    versesWrap.innerHTML = "";
+    let currentChapter = null;
+
+    for (let i = 0; i < arabic.length; i++) {
+      const v = arabic[i];
+      if (v.chapter !== currentChapter) {
+        currentChapter = v.chapter;
+        versesWrap.appendChild(
+          el("div", { class: "surah-header" }, [
+            el("span", { class: "surah-header-num" }, String(currentChapter)),
+            el("span", { class: "surah-header-name" }, SURAH_NAMES[currentChapter] || `Surah ${currentChapter}`),
+          ])
+        );
+      }
+      const card = el("div", { class: "verse-card" }, [
+        el("div", { class: "verse-arabic" }, [
+          el("span", {}, v.text),
+          el("span", { class: "verse-num-badge" }, String(v.verse)),
+        ]),
+        el("p", { class: "verse-translit" }, translit[i] ? translit[i].text : ""),
+        el("p", { class: "verse-urdu" }, urdu[i] ? urdu[i].text : ""),
+      ]);
+      versesWrap.appendChild(card);
+    }
+
+    const note = el("p", { class: "text-source-note" },
+      "Arabic text \u00b7 transliteration: tanzil.net. Urdu translation: Abul Ala Maududi, via quranromanurdu.com."
+    );
+    versesWrap.appendChild(note);
+  } catch (e) {
+    versesWrap.innerHTML = "";
+    renderError(versesWrap, e.message);
+  }
+}
+
 function route() {
   const hash = window.location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean);
 
-  if (parts[0] === "book" && parts[1] && parts[2] === "part" && parts[3]) {
+  if (parts[0] === "quran-text" && parts[1]) {
+    renderQuranText(parseInt(parts[1], 10) || 1);
+  } else if (parts[0] === "book" && parts[1] && parts[2] === "part" && parts[3]) {
     const startPage = parts[4] === "page" && parts[5] ? parseInt(parts[5], 10) : 1;
     renderPart(decodeURIComponent(parts[1]), decodeURIComponent(parts[3]), startPage);
   } else if (parts[0] === "book" && parts[1]) {
