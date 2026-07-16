@@ -644,6 +644,7 @@ async function loadHadithBook(bookSlug) {
       inBookNumber: h.ib,
       arabic: h.ar,
       english: h.en,
+      hinglish: h.hi || null,
     }));
   }
 
@@ -754,15 +755,10 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
     function hadithShareText(h) {
       const bookName = book ? book.name : bookSlug;
       const chapterName = sections[sectionNum] || "";
-      return [
-        h.arabic,
-        "",
-        h.english,
-        "",
-        `${bookName} ${h.hadithnumber}`,
-        `Book ${sectionNum}: ${chapterName}, Hadith ${h.inBookNumber}`,
-        hadithUrl(h.hadithnumber),
-      ].join("\n");
+      const lines = [h.arabic, "", h.english];
+      if (h.hinglish) lines.push("", h.hinglish);
+      lines.push("", `${bookName} ${h.hadithnumber}`, `Book ${sectionNum}: ${chapterName}, Hadith ${h.inBookNumber}`, hadithUrl(h.hadithnumber));
+      return lines.join("\n");
     }
 
     function socialLinksRow(h) {
@@ -820,6 +816,7 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
       const card = el("div", { class: "dua-card", id: `h-${h.hadithnumber}` }, [
         el("div", { class: "verse-arabic dua-arabic" }, h.arabic),
         el("p", { class: "verse-urdu dua-translation" }, h.english),
+        ...(h.hinglish ? [el("p", { class: "verse-translit hadith-hinglish" }, h.hinglish)] : []),
         el(
           "p",
           { class: "dua-reference" },
