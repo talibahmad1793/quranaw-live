@@ -298,17 +298,11 @@ async function renderPart(bookSlug, fileName, startPage) {
 
     const baseViewport = page.getViewport({ scale: 1 });
 
-    // Fit height too, so the whole page is visible without scrolling -
-    // measure how much vertical space is actually left below the canvas
-    // wrap's top position (i.e. below the header/breadcrumb/top bar).
-    const topOffset = canvasWrap.getBoundingClientRect().top;
-    const hintHeight = hint.offsetHeight || 24;
-    const bottomMargin = 24;
-    const availableHeight = window.innerHeight - topOffset - hintHeight - bottomMargin;
-
-    const widthScale = Math.min(availableWidth, desktopCap) / baseViewport.width;
-    const heightScale = Math.max(240, availableHeight) / baseViewport.height;
-    const fitScale = Math.min(widthScale, heightScale);
+    // Fit to WIDTH, not height. Fitting the whole page height into the
+    // screen shrinks text unnecessarily on normal (non-scanned) documents -
+    // mobile readers expect to scroll down a tall page, same as any PDF or
+    // e-book app, rather than have everything squeezed to fit one screen.
+    const fitScale = Math.min(availableWidth, desktopCap) / baseViewport.width;
     const scale = zoomed ? fitScale * 1.9 : fitScale;
     const viewport = page.getViewport({ scale });
 
