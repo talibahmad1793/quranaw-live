@@ -3,36 +3,27 @@ const API_ROOT = `https://api.github.com/repos/${cfg.githubOwner}/${cfg.githubRe
 const RAW_ROOT = `https://raw.githubusercontent.com/${cfg.githubOwner}/${cfg.githubRepo}/${cfg.githubBranch}`;
 const PROGRESS_PREFIX = "qaw:progress:";
 
-// Verified, structured Quran text data (not OCR), originally from the
-// open-source fawazahmed0/quran-api project - served from your own fork
-// so this site has no dependency on the original repo staying online.
-// Three editions combined per verse:
-//  - Arabic Uthmani text (source: tanzil.net, the standard reference text)
-//  - Roman transliteration of the Arabic recitation (source: tanzil.net)
-//  - Roman Urdu translation by Abul Ala Maududi (source: quranromanurdu.com)
-const QTEXT_ROOT = "https://raw.githubusercontent.com/talibahmad1793/quran-api/1/editions";
-const QTEXT_EDITIONS = {
-  arabic: "ara-quranuthmanihaf",
-  transliteration: "ara-quran-la",
-  urdu: "urd-abulaalamaududi-la",
-};
+// Verified, structured Quran text data (not OCR). Sourced originally from
+// tanzil.net (Arabic + transliteration) and quranromanurdu.com (Urdu
+// translation by Abul Ala Maududi), packaged and stored directly in this
+// repo (see /quran-data) - no dependency on any external repo or API.
+const QURAN_DATA_PATH = "quran-data";
 const QURAN_TEXT_BOOK_SLUG = "quran-roman-urdu-hindi";
 const DUAS_JSON_PATH = "duas/duas.json";
 
-// Verified hadith data (Arabic + English), originally from fawazahmed0/
-// hadith-api - served from your own fork, same reasoning as above.
-// Numbering matches sunnah.com: each hadith's overall number is its
-// standard citation (e.g. "Sahih al-Bukhari 1"), and reference.book/
-// reference.hadith give the traditional in-book chapter and position
-// sunnah.com also shows.
-const HADITH_ROOT = "https://raw.githubusercontent.com/talibahmad1793/hadith-api/1/editions";
+// Verified hadith data (Arabic + English), packaged and stored directly in
+// this repo (see /hadith-data) - no external dependency. Numbering matches
+// sunnah.com: each hadith's overall number is its standard citation (e.g.
+// "Sahih al-Bukhari 1"), and reference.book/reference.hadith give the
+// traditional in-book chapter and position sunnah.com also shows.
+const HADITH_DATA_PATH = "hadith-data";
 const HADITH_BOOKS = [
-  { slug: "bukhari", name: "Sahih al-Bukhari", ar: "ara-bukhari", en: "eng-bukhari" },
-  { slug: "muslim", name: "Sahih Muslim", ar: "ara-muslim", en: "eng-muslim" },
-  { slug: "abudawud", name: "Sunan Abi Dawud", ar: "ara-abudawud", en: "eng-abudawud" },
-  { slug: "tirmidhi", name: "Jami' at-Tirmidhi", ar: "ara-tirmidhi", en: "eng-tirmidhi" },
-  { slug: "nasai", name: "Sunan an-Nasa'i", ar: "ara-nasai", en: "eng-nasai" },
-  { slug: "ibnmajah", name: "Sunan Ibn Majah", ar: "ara-ibnmajah", en: "eng-ibnmajah" },
+  { slug: "bukhari", name: "Sahih al-Bukhari" },
+  { slug: "muslim", name: "Sahih Muslim" },
+  { slug: "abudawud", name: "Sunan Abi Dawud" },
+  { slug: "tirmidhi", name: "Jami' at-Tirmidhi" },
+  { slug: "nasai", name: "Sunan an-Nasa'i" },
+  { slug: "ibnmajah", name: "Sunan Ibn Majah" },
 ];
 const hadithBookCache = {}; // slug -> { sections, hadithsByBook: {bookNum: [{ar,en}]} }
 
@@ -149,7 +140,7 @@ async function renderHome() {
 
   try {
     const items = await githubList("");
-    const RESERVED_FOLDERS = ["duas", "search-index"]; // reserved for JSON data, not PDF folders
+    const RESERVED_FOLDERS = ["duas", "search-index", "quran-data", "hadith-data"]; // reserved for JSON data, not PDF folders
     const folders = items.filter((i) => i.type === "dir" && !RESERVED_FOLDERS.includes(i.name)).sort(naturalSort);
     main.innerHTML = "";
 
@@ -452,12 +443,11 @@ async function renderPart(bookSlug, fileName, startPage) {
   }
 }
 
-async function fetchJuz(editionSlug, juzNumber) {
-  const url = `${QTEXT_ROOT}/${editionSlug}/juzs/${juzNumber}.json`;
+async function fetchJuz(juzNumber) {
+  const url = `${RAW_ROOT}/${QURAN_DATA_PATH}/juz-${String(juzNumber).padStart(2, "0")}.json`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Couldn't load text data (${res.status})`);
-  const data = await res.json();
-  return data.juzs;
+  return res.json();
 }
 
 async function renderQuranText(juzNumber, scrollTarget) {
@@ -492,19 +482,14 @@ async function renderQuranText(juzNumber, scrollTarget) {
   app.appendChild(el("main", {}, wrap));
 
   try {
-    const [arabic, translit, urdu] = await Promise.all([
-      fetchJuz(QTEXT_EDITIONS.arabic, juzNumber),
-      fetchJuz(QTEXT_EDITIONS.transliteration, juzNumber),
-      fetchJuz(QTEXT_EDITIONS.urdu, juzNumber),
-    ]);
+    const verses = await fetchJuz(juzNumber);
 
     versesWrap.innerHTML = "";
     let currentChapter = null;
 
-    for (let i = 0; i < arabic.length; i++) {
-      const v = arabic[i];
-      if (v.chapter !== currentChapter) {
-        currentChapter = v.chapter;
+    verses.forEach((v) => {
+      if (v.s !== currentChapter) {
+        currentChapter = v.s;
         versesWrap.appendChild(
           el("div", { class: "surah-header" }, [
             el("span", { class: "surah-header-num" }, String(currentChapter)),
@@ -512,16 +497,16 @@ async function renderQuranText(juzNumber, scrollTarget) {
           ])
         );
       }
-      const card = el("div", { class: "verse-card", id: `v-${v.chapter}-${v.verse}` }, [
+      const card = el("div", { class: "verse-card", id: `v-${v.s}-${v.a}` }, [
         el("div", { class: "verse-arabic" }, [
-          el("span", {}, v.text),
-          el("span", { class: "verse-num-badge" }, String(v.verse)),
+          el("span", {}, v.ar),
+          el("span", { class: "verse-num-badge" }, String(v.a)),
         ]),
-        el("p", { class: "verse-translit" }, translit[i] ? translit[i].text : ""),
-        el("p", { class: "verse-urdu" }, urdu[i] ? urdu[i].text : ""),
+        el("p", { class: "verse-translit" }, v.t),
+        el("p", { class: "verse-urdu" }, v.u),
       ]);
       versesWrap.appendChild(card);
-    }
+    });
 
     const note = el("p", { class: "text-source-note" },
       "Arabic text \u00b7 transliteration: tanzil.net. Urdu translation: Abul Ala Maududi, via quranromanurdu.com."
@@ -586,28 +571,21 @@ async function loadHadithBook(bookSlug) {
   const book = HADITH_BOOKS.find((b) => b.slug === bookSlug);
   if (!book) throw new Error("Unknown hadith book");
 
-  const [arRes, enRes] = await Promise.all([
-    fetch(`${HADITH_ROOT}/${book.ar}.json`),
-    fetch(`${HADITH_ROOT}/${book.en}.json`),
-  ]);
-  if (!arRes.ok || !enRes.ok) throw new Error("Couldn't load hadith data");
-  const [arData, enData] = await Promise.all([arRes.json(), enRes.json()]);
+  const res = await fetch(`${RAW_ROOT}/${HADITH_DATA_PATH}/${bookSlug}.json`);
+  if (!res.ok) throw new Error("Couldn't load hadith data");
+  const data = await res.json();
 
   const hadithsByBook = {};
-  for (let i = 0; i < arData.hadiths.length; i++) {
-    const a = arData.hadiths[i];
-    const e = enData.hadiths[i];
-    const bookNum = a.reference.book;
-    if (!hadithsByBook[bookNum]) hadithsByBook[bookNum] = [];
-    hadithsByBook[bookNum].push({
-      hadithnumber: a.hadithnumber,
-      inBookNumber: a.reference.hadith,
-      arabic: a.text,
-      english: e.text,
-    });
+  for (const [bookNum, list] of Object.entries(data.hadithsByBook)) {
+    hadithsByBook[bookNum] = list.map((h) => ({
+      hadithnumber: h.n,
+      inBookNumber: h.ib,
+      arabic: h.ar,
+      english: h.en,
+    }));
   }
 
-  const result = { sections: arData.metadata.sections, hadithsByBook };
+  const result = { sections: data.sections, hadithsByBook };
   hadithBookCache[bookSlug] = result;
   return result;
 }
