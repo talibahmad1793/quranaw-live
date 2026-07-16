@@ -24,6 +24,10 @@ const HADITH_BOOKS = [
   { slug: "tirmidhi", name: "Jami' at-Tirmidhi" },
   { slug: "nasai", name: "Sunan an-Nasa'i" },
   { slug: "ibnmajah", name: "Sunan Ibn Majah" },
+  { slug: "malik", name: "Muwatta Malik" },
+  { slug: "nawawi", name: "40 Hadith of an-Nawawi" },
+  { slug: "qudsi", name: "40 Hadith Qudsi" },
+  { slug: "dehlawi", name: "40 Hadith of Shah Waliullah Dehlawi" },
 ];
 const hadithBookCache = {}; // slug -> { sections, hadithsByBook: {bookNum: [{ar,en}]} }
 
@@ -189,7 +193,7 @@ async function renderHome() {
         el("div", { class: "card-body" }, [
           el("span", { class: "card-kicker" }, "Typed text"),
           el("h2", { class: "card-title" }, "Hadith Collections"),
-          el("p", { class: "card-desc" }, "Sahih al-Bukhari, Sahih Muslim & 4 more \u2014 Arabic & English"),
+          el("p", { class: "card-desc" }, "Sahih al-Bukhari, Sahih Muslim & 8 more \u2014 Arabic & English"),
         ]),
       ])
     );
