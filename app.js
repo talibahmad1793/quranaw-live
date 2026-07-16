@@ -34,6 +34,13 @@ const HADITH_BOOKS = [
 ];
 const hadithBookCache = {}; // slug -> { sections, hadithsByBook: {bookNum: [{ar,en}]} }
 
+const SEARCH_INDEX_PATHS = {
+  quran: "search-index/quran_index.json",
+  hadith: "search-index/hadith_index.json",
+};
+let searchIndexCache = null; // { quran: [...], hadith: [...] }
+const HADITH_BOOK_NAMES = Object.fromEntries(HADITH_BOOKS.map((b) => [b.slug, b.name]));
+
 const SURAH_NAMES = [
   null, "Al-Fatihah", "Al-Baqarah", "Aal-e-Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf",
   "Al-Anfal", "At-Tawbah", "Yunus", "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl",
@@ -451,7 +458,7 @@ async function fetchJuz(editionSlug, juzNumber) {
   return data.juzs;
 }
 
-async function renderQuranText(juzNumber) {
+async function renderQuranText(juzNumber, scrollTarget) {
   app.innerHTML = "";
   juzNumber = Math.max(1, Math.min(juzNumber, 30));
 
@@ -503,7 +510,7 @@ async function renderQuranText(juzNumber) {
           ])
         );
       }
-      const card = el("div", { class: "verse-card" }, [
+      const card = el("div", { class: "verse-card", id: `v-${v.chapter}-${v.verse}` }, [
         el("div", { class: "verse-arabic" }, [
           el("span", {}, v.text),
           el("span", { class: "verse-num-badge" }, String(v.verse)),
@@ -518,6 +525,15 @@ async function renderQuranText(juzNumber) {
       "Arabic text \u00b7 transliteration: tanzil.net. Urdu translation: Abul Ala Maududi, via quranromanurdu.com."
     );
     versesWrap.appendChild(note);
+
+    if (scrollTarget) {
+      const target = document.getElementById(`v-${scrollTarget.s}-${scrollTarget.a}`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("search-highlight");
+        setTimeout(() => target.classList.remove("search-highlight"), 2500);
+      }
+    }
   } catch (e) {
     versesWrap.innerHTML = "";
     renderError(versesWrap, e.message);
@@ -659,7 +675,7 @@ async function renderHadithChapters(bookSlug) {
   }
 }
 
-async function renderHadithList(bookSlug, sectionNum) {
+async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
   app.innerHTML = "";
   const book = HADITH_BOOKS.find((b) => b.slug === bookSlug);
   const crumb = el("p", { class: "crumb" }, [
@@ -690,7 +706,7 @@ async function renderHadithList(bookSlug, sectionNum) {
     }
 
     hadiths.forEach((h) => {
-      const card = el("div", { class: "dua-card" }, [
+      const card = el("div", { class: "dua-card", id: `h-${h.hadithnumber}` }, [
         el("div", { class: "verse-arabic dua-arabic" }, h.arabic),
         el("p", { class: "verse-urdu dua-translation" }, h.english),
         el(
@@ -701,9 +717,117 @@ async function renderHadithList(bookSlug, sectionNum) {
       ]);
       listWrap.appendChild(card);
     });
+
+    if (scrollTarget) {
+      const target = document.getElementById(`h-${scrollTarget}`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("search-highlight");
+        setTimeout(() => target.classList.remove("search-highlight"), 2500);
+      }
+    }
   } catch (e) {
     listWrap.innerHTML = "";
     renderError(listWrap, e.message);
+  }
+}
+
+async function loadSearchIndex() {
+  if (searchIndexCache) return searchIndexCache;
+  const [qRes, hRes] = await Promise.all([
+    fetch(`${RAW_ROOT}/${SEARCH_INDEX_PATHS.quran}`),
+    fetch(`${RAW_ROOT}/${SEARCH_INDEX_PATHS.hadith}`),
+  ]);
+  if (!qRes.ok || !hRes.ok) throw new Error("Couldn't load the search index");
+  const [quran, hadith] = await Promise.all([qRes.json(), hRes.json()]);
+  searchIndexCache = { quran, hadith };
+  return searchIndexCache;
+}
+
+function snippetAround(text, query, radius) {
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(query.toLowerCase());
+  if (idx === -1) return text.slice(0, radius * 2);
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(text.length, idx + query.length + radius);
+  return (start > 0 ? "\u2026" : "") + text.slice(start, end) + (end < text.length ? "\u2026" : "");
+}
+
+async function renderSearch(query) {
+  app.innerHTML = "";
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: "#/" }, "Library"), " / Search"]);
+
+  const form = el("form", { class: "search-form", id: "searchForm" }, [
+    el("input", { class: "search-input", id: "searchInput", type: "search", value: query || "", placeholder: "Search the Qur'an and Hadith\u2026", autofocus: "true" }),
+    el("button", { class: "btn", type: "submit" }, "Search"),
+  ]);
+
+  const resultsWrap = el("div", { class: "search-results" });
+  const wrap = el("div", { class: "container text-container" }, [crumb, el("h1", { class: "page-title" }, "Search"), form, resultsWrap]);
+  app.appendChild(el("main", {}, wrap));
+
+  document.getElementById("searchForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = document.getElementById("searchInput").value.trim();
+    if (q) window.location.hash = `#/search/${encodeURIComponent(q)}`;
+  });
+
+  if (!query) {
+    resultsWrap.appendChild(el("p", { class: "state-msg" }, "Type something above to search across every Surah, Ayah, and Hadith on this site."));
+    return;
+  }
+
+  renderLoading(resultsWrap);
+
+  try {
+    const { quran, hadith } = await loadSearchIndex();
+    const q = query.toLowerCase();
+
+    const quranMatches = quran.filter((v) => v.t.toLowerCase().includes(q) || v.u.toLowerCase().includes(q)).slice(0, 40);
+    const hadithMatches = hadith.filter((h) => h.e.toLowerCase().includes(q)).slice(0, 40);
+
+    resultsWrap.innerHTML = "";
+    resultsWrap.appendChild(
+      el("p", { class: "search-summary" }, `${quranMatches.length + hadithMatches.length} result(s) for \u201c${query}\u201d`)
+    );
+
+    if (quranMatches.length > 0) {
+      resultsWrap.appendChild(el("h2", { class: "search-section-title" }, "Qur'an"));
+      quranMatches.forEach((v) => {
+        const matchedUrdu = v.u.toLowerCase().includes(q);
+        const snippet = snippetAround(matchedUrdu ? v.u : v.t, query, 60);
+        resultsWrap.appendChild(
+          el("a", { class: "search-result", href: `#/quran-text/${v.j}/v/${v.s}/${v.a}` }, [
+            el("span", { class: "search-result-ref" }, `${SURAH_NAMES[v.s] || "Surah " + v.s} ${v.s}:${v.a} \u00b7 Juz ${v.j}`),
+            el("p", { class: "search-result-snippet" }, snippet),
+          ])
+        );
+      });
+    }
+
+    if (hadithMatches.length > 0) {
+      resultsWrap.appendChild(el("h2", { class: "search-section-title" }, "Hadith"));
+      hadithMatches.forEach((h) => {
+        const snippet = snippetAround(h.e, query, 70);
+        resultsWrap.appendChild(
+          el("a", { class: "search-result", href: `#/hadith/${h.bk}/${h.sc}/h/${h.n}` }, [
+            el(
+              "span",
+              { class: "search-result-ref" },
+              `${HADITH_BOOK_NAMES[h.bk] || h.bk} ${h.n} \u00b7 Book ${h.sc}, Hadith ${h.ib}`
+            ),
+            el("p", { class: "search-result-snippet" }, snippet),
+          ])
+        );
+      });
+    }
+
+    if (quranMatches.length === 0 && hadithMatches.length === 0) {
+      resultsWrap.appendChild(el("p", { class: "state-msg" }, "No matches found. Try a different word or phrase."));
+    }
+  } catch (e) {
+    resultsWrap.innerHTML = "";
+    renderError(resultsWrap, e.message);
   }
 }
 
@@ -711,7 +835,11 @@ function route() {
   const hash = window.location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean);
 
-  if (parts[0] === "hadith" && parts[1] && parts[2]) {
+  if (parts[0] === "search") {
+    renderSearch(parts[1] ? decodeURIComponent(parts[1]) : "");
+  } else if (parts[0] === "hadith" && parts[1] && parts[2] && parts[3] === "h" && parts[4]) {
+    renderHadithList(decodeURIComponent(parts[1]), parseInt(parts[2], 10), parseInt(parts[4], 10));
+  } else if (parts[0] === "hadith" && parts[1] && parts[2]) {
     renderHadithList(decodeURIComponent(parts[1]), parseInt(parts[2], 10));
   } else if (parts[0] === "hadith" && parts[1]) {
     renderHadithChapters(decodeURIComponent(parts[1]));
@@ -719,6 +847,8 @@ function route() {
     renderHadithBooks();
   } else if (parts[0] === "duas") {
     renderDuas();
+  } else if (parts[0] === "quran-text" && parts[1] && parts[2] === "v" && parts[3] && parts[4]) {
+    renderQuranText(parseInt(parts[1], 10) || 1, { s: parseInt(parts[3], 10), a: parseInt(parts[4], 10) });
   } else if (parts[0] === "quran-text" && parts[1]) {
     renderQuranText(parseInt(parts[1], 10) || 1);
   } else if (parts[0] === "book" && parts[1] && parts[2] === "part" && parts[3]) {
