@@ -297,6 +297,12 @@ h1.page-title { font-family: var(--font-display); font-size: 42px; color: var(--
 .hadith-hinglish {
   border-top: 1px dashed var(--line);
   padding-top: 10px;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 12px 0 6px;
 }
 .verse-urdu {
   font-size: 15px;
