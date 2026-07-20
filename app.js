@@ -212,6 +212,10 @@ async function renderHome() {
   ]);
   app.appendChild(hero);
 
+  const ticker = el("div", { class: "hadith-ticker", "aria-label": "Rotating hadith highlights" });
+  app.appendChild(ticker);
+  startHadithTicker(ticker);
+
   const main = el("main", { class: "container" });
   app.appendChild(main);
   renderLoading(main);
@@ -727,6 +731,100 @@ async function loadHadithBook(bookSlug) {
   return result;
 }
 
+// --- Home page hadith ticker: a new hadith slides right-to-left every 30s ---
+let tickerTimer = null;
+let tickerPool = [];
+let tickerPoolPromise = null;
+
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function buildTickerPool() {
+  if (tickerPoolPromise) return tickerPoolPromise;
+  tickerPoolPromise = (async () => {
+    const candidates = shuffleInPlace([...HADITH_BOOKS]).slice(0, 3);
+    const pool = [];
+    for (const b of candidates) {
+      try {
+        const { sections, hadithsByBook } = await loadHadithBook(b.slug);
+        for (const [sectionNum, list] of Object.entries(hadithsByBook)) {
+          for (const h of list) {
+            if (!h.english) continue;
+            pool.push({
+              bookSlug: b.slug,
+              bookName: b.name,
+              sectionNum,
+              chapterName: sections[sectionNum] || "",
+              hadithnumber: h.hadithnumber,
+              inBookNumber: h.inBookNumber,
+              snippet: h.english.length > 160 ? h.english.slice(0, 160).trim() + "\u2026" : h.english,
+            });
+          }
+        }
+      } catch (e) {
+        // That book's data may not be in the repo yet - just skip it.
+      }
+    }
+    return shuffleInPlace(pool);
+  })();
+  return tickerPoolPromise;
+}
+
+function stopHadithTicker() {
+  if (tickerTimer) {
+    clearInterval(tickerTimer);
+    tickerTimer = null;
+  }
+}
+
+async function startHadithTicker(container) {
+  const track = el("a", { class: "hadith-ticker-track", href: "#/hadith" });
+  container.appendChild(track);
+
+  const pool = await buildTickerPool();
+  if (!container.isConnected) return; // user navigated away while this was loading
+  if (pool.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let idx = 0;
+
+  function showNext() {
+    if (!container.isConnected) {
+      stopHadithTicker();
+      return;
+    }
+    const h = pool[idx % pool.length];
+    idx++;
+    track.href = `#/hadith/${h.bookSlug}/${h.sectionNum}/h/${h.hadithnumber}`;
+    track.innerHTML = "";
+    track.appendChild(el("span", { class: "hadith-ticker-ref" }, `${h.bookName} ${h.hadithnumber}`));
+    track.appendChild(el("span", { class: "hadith-ticker-text" }, h.snippet));
+
+    if (reduceMotion) return; // static text only, no motion for users who asked for less
+    const width = container.clientWidth;
+    track.style.transform = `translateX(${width}px)`;
+    requestAnimationFrame(() => {
+      const trackWidth = track.scrollWidth;
+      track.getAnimations().forEach((a) => a.cancel());
+      track.animate(
+        [{ transform: `translateX(${width}px)` }, { transform: `translateX(-${trackWidth}px)` }],
+        { duration: 16000, easing: "linear", fill: "forwards" }
+      );
+    });
+  }
+
+  showNext();
+  tickerTimer = setInterval(showNext, 30000);
+}
+
 async function renderHadithBooks() {
   app.innerHTML = "";
   const crumb = el("p", { class: "crumb" }, [el("a", { href: "#/" }, "Library"), " / Hadith Collections"]);
@@ -1031,6 +1129,7 @@ async function renderSearch(query) {
 }
 
 function route() {
+  stopHadithTicker();
   const hash = window.location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean);
 

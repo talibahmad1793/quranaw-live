@@ -109,6 +109,41 @@ header.site-header {
   -webkit-mask: radial-gradient(circle at 20px 0, transparent 19px, black 20px) 0 -1px / 40px 100% repeat-x;
   mask: radial-gradient(circle at 20px 0, transparent 19px, black 20px) 0 -1px / 40px 100% repeat-x;
 }
+
+.hadith-ticker {
+  position: relative;
+  overflow: hidden;
+  height: 54px;
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+}
+.hadith-ticker-track {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  white-space: nowrap;
+  padding: 0 20px;
+  will-change: transform;
+}
+.hadith-ticker-ref {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.hadith-ticker-text {
+  font-size: 14px;
+  color: var(--ink);
+  opacity: 0.75;
+}
+@media (max-width: 640px) {
+  .hadith-ticker { height: 46px; }
+  .hadith-ticker-ref { font-size: 13px; }
+  .hadith-ticker-text { font-size: 12.5px; }
+}
 .hero .eyebrow {
   font-family: var(--font-display);
   font-size: 20px;
