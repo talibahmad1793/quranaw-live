@@ -104,6 +104,80 @@ function renderError(target, message) {
   target.appendChild(el("p", { class: "state-msg error" }, message));
 }
 
+// --- "Report a correction" popup, used on hadith cards ---
+function openReportModal(context) {
+  const email = (cfg.contactEmail || "").trim();
+
+  const messageArea = el("textarea", {
+    class: "modal-textarea",
+    rows: "5",
+    placeholder: "Describe what looks wrong — a typo, a mistranslation, a missing word…",
+  });
+
+  const overlay = el("div", { class: "modal-overlay", role: "presentation" });
+
+  function closeModal() {
+    overlay.classList.remove("is-open");
+    document.removeEventListener("keydown", onKeydown);
+    setTimeout(() => overlay.remove(), 180);
+  }
+  function onKeydown(e) {
+    if (e.key === "Escape") closeModal();
+  }
+
+  const closeX = el("button", { class: "modal-close", type: "button", "aria-label": "Close" }, "\u00d7");
+  closeX.addEventListener("click", closeModal);
+
+  const copyBtn = el("button", { class: "btn btn-ghost", type: "button" }, "Copy email");
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(email);
+      copyBtn.textContent = "Copied!";
+    } catch (e) {
+      copyBtn.textContent = "Couldn't copy";
+    }
+    setTimeout(() => (copyBtn.textContent = "Copy email"), 1600);
+  });
+
+  const sendBtn = el("button", { class: "btn btn-primary", type: "button" }, "Open in email app");
+  sendBtn.addEventListener("click", () => {
+    const subject = `Correction — ${context}`;
+    const body = [
+      `Regarding: ${context}`,
+      `Page: ${window.location.href}`,
+      "",
+      messageArea.value.trim() || "(describe the issue here)",
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+
+  const panel = el(
+    "div",
+    { class: "modal-panel", role: "dialog", "aria-modal": "true", "aria-label": "Report a correction" },
+    [
+      el("div", { class: "modal-head" }, [el("h3", { class: "modal-title" }, "Report a correction"), closeX]),
+      el("p", { class: "modal-context" }, context),
+      el("label", { class: "modal-label", for: "modal-message" }, "What's wrong?"),
+      messageArea,
+      el("div", { class: "modal-email-row" }, [
+        el("span", { class: "modal-email-label" }, "Or email us directly"),
+        el("span", { class: "modal-email" }, email),
+        copyBtn,
+      ]),
+      el("div", { class: "modal-actions" }, [sendBtn]),
+    ]
+  );
+
+  overlay.appendChild(panel);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.body.appendChild(overlay);
+  document.addEventListener("keydown", onKeydown);
+  requestAnimationFrame(() => overlay.classList.add("is-open"));
+  messageArea.focus();
+}
+
 // --- Reading progress (kept in the visitor's own browser only) ---
 function getProgress(bookSlug) {
   try {
@@ -813,6 +887,15 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
 
       const shareRow = el("div", { class: "share-row" }, [shareBtn, el("span", { class: "share-sep" }, "|"), copyBtn]);
 
+      const reportBtn = el("button", { class: "report-link", type: "button" }, [
+        el("svg", { width: "13", height: "13", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", html: '<path d="M8 1.5 14.5 13.5H1.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6.2v3.3M8 11.6h.01" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>' }),
+        el("span", {}, "Report issue"),
+      ]);
+      reportBtn.addEventListener("click", () => {
+        const bookName = book ? book.name : bookSlug;
+        openReportModal(`${bookName} ${h.hadithnumber} \u00b7 Book ${sectionNum}, Hadith ${h.inBookNumber}`);
+      });
+
       const card = el("div", { class: "dua-card", id: `h-${h.hadithnumber}` }, [
         el("div", { class: "verse-arabic dua-arabic" }, h.arabic),
         el("p", { class: "verse-urdu dua-translation" }, h.english),
@@ -823,6 +906,7 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
           `${book ? book.name : bookSlug} ${h.hadithnumber} \u00b7 Book ${sectionNum}, Hadith ${h.inBookNumber}`
         ),
         shareRow,
+        reportBtn,
         social,
       ]);
       listWrap.appendChild(card);
