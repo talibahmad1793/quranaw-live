@@ -10,5 +10,6 @@ window.SITE_CONFIG = {
 
   // Shown in the "Report a correction" popup on hadith pages.
   // Change this to your own address.
-  contactEmail: "talibahmad1793@gmail.com",
+  // main Email Talibahmad1793@gmail.com
+  contactEmail: "support@quranaw.com",
 };
