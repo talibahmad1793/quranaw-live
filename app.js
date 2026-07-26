@@ -7,8 +7,8 @@ const API_ROOT = `https://api.github.com/repos/${cfg.githubOwner}/${cfg.githubRe
 // for GitHub Pages to serve), so pointing canonical at a hash path would
 // claim a URL exists that a crawler would just get a 404 on. Title/description
 // still matter for browser tabs, bookmarks, and Googlebot's rendered snapshot.
-function setMeta({ title, description }) {
-  const fullTitle = title ? `${title} | ${cfg.siteTitle}` : cfg.siteTitle;
+function setMeta({ title, description, full }) {
+  const fullTitle = full || (title ? `${title} | ${cfg.siteTitle}` : cfg.siteTitle);
   document.title = fullTitle;
 
   const descTag = document.querySelector('meta[name="description"]');
@@ -270,7 +270,7 @@ function partHref(bookSlug, fileName, page) {
 
 async function renderHome() {
   setMeta({
-    title: null,
+    full: "QuranAnyWhere — Read the Qur'an and Hadith Online, Free",
     description: "Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device.",
   });
   app.innerHTML = "";
