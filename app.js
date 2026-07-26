@@ -271,7 +271,7 @@ function partHref(bookSlug, fileName, page) {
 async function renderHome() {
   setMeta({
     title: null,
-    description: "Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim, and other major hadith collections — free, anywhere, on any device.",
+    description: "Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device.",
   });
   app.innerHTML = "";
   const hero = el("section", { class: "hero" }, [
