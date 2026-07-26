@@ -1,6 +1,5 @@
 const cfg = window.SITE_CONFIG;
 const API_ROOT = `https://api.github.com/repos/${cfg.githubOwner}/${cfg.githubRepo}/contents`;
-const SITE_ORIGIN = "https://quranaw.com";
 
 // Updates the document title + meta description for the current route.
 // Note: canonical/og:url intentionally stay fixed to the homepage. Everything
