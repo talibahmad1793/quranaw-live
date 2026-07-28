@@ -1,5 +1,4 @@
 const cfg = window.SITE_CONFIG;
-const API_ROOT = `https://api.github.com/repos/${cfg.githubOwner}/${cfg.githubRepo}/contents`;
 const SITE_ORIGIN = "https://www.quranaw.com";
 
 // Updates the document title, meta description, canonical URL, and OG tags
@@ -146,13 +145,21 @@ function titleFromSlug(slug) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Reads a pre-generated, same-origin manifest.json instead of calling the
+// live GitHub API. This is what previously hit api.github.com's 60
+// requests/hour/IP unauthenticated rate limit on every homepage visit and
+// every book page - a real risk once real traffic is shared behind the same
+// IP (mobile carrier CGNAT, office/school/mosque WiFi, etc). Static files
+// served through GitHub Pages' CDN have no such limit.
+// Root manifest.json lists the top-level book folders; each book folder has
+// its own manifest.json listing its PDF files. Regenerate these with
+// generate-manifests.py whenever you add/remove a book or PDF file.
 async function githubList(path) {
-  const url = path ? `${API_ROOT}/${path}?ref=${cfg.githubBranch}` : `${API_ROOT}?ref=${cfg.githubBranch}`;
-  const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+  const url = path ? `/${path}/manifest.json` : `/manifest.json`;
+  const res = await fetch(url);
   if (!res.ok) {
-    if (res.status === 403) throw new Error("GitHub API rate limit reached. Try again in a bit.");
-    if (res.status === 404) throw new Error("Repo or folder not found. Check config.js.");
-    throw new Error(`GitHub API error (${res.status})`);
+    if (res.status === 404) throw new Error("manifest.json not found. Run generate-manifests.py after adding files.");
+    throw new Error(`Manifest fetch error (${res.status})`);
   }
   return res.json();
 }
