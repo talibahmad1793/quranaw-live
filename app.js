@@ -1096,14 +1096,14 @@ async function renderHadithChapters(bookSlug) {
     const grid = el("div", { class: "grid" });
     Object.keys(sections)
       .map(Number)
-      .filter((n) => n > 0 && sections[n])
+      .filter((n) => sections[n])
       .sort((a, b) => a - b)
       .forEach((n) => {
         grid.appendChild(
           el("a", { class: "card", href: `/hadith/${bookSlug}/${n}` }, [
             el("div", { class: "card-spine" }),
             el("div", { class: "card-body" }, [
-              el("span", { class: "card-kicker" }, `Book ${n}`),
+              el("span", { class: "card-kicker" },  n === 0 ? "Introduction" : `Book ${n}`),
               el("h2", { class: "card-title hadith-chapter-title" }, sections[n]),
             ]),
           ])
