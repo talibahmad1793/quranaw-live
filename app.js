@@ -1624,96 +1624,13 @@ async function renderSearch(query) {
     renderError(resultsWrap, e.message);
   }
 }
-function renderZakatCalculator() {
-  setMeta({
-    title: "Zakat Calculator",
-    description: "Estimate your annual Zakat using your assets, liabilities, and chosen Nisab method.",
-  });
-  app.innerHTML = "";
-  const fields = [
-    ["cash", "Cash in hand", "0"],
-    ["bank", "Bank balance", "0"],
-    ["gold", "Gold value", "0"],
-    ["silver", "Silver value", "0"],
-    ["investments", "Shares, funds & business stock", "0"],
-    ["receivables", "Money owed to you", "0"],
-    ["debts", "Immediate debts & bills due", "0"],
-  ];
-  const input = (id, label, hint = "") => el("label", { class: "zakat-field", for: id }, [
-    el("span", { class: "zakat-field-label" }, label),
-    ...(hint ? [el("small", { class: "zakat-field-hint" }, hint)] : []),
-    el("div", { class: "zakat-input-wrap" }, [
-      el("span", { "aria-hidden": "true" }, "₹"),
-      el("input", { id, type: "number", min: "0", step: "0.01", value: "0", inputmode: "decimal" }),
-    ]),
-  ]);
-  const form = el("form", { class: "zakat-form", id: "zakatForm" }, [
-    el("section", { class: "zakat-panel" }, [
-      el("h2", {}, "Your Zakatable assets"),
-      el("p", { class: "zakat-panel-copy" }, "Enter the value of assets you have owned for one lunar year."),
-      el("div", { class: "zakat-fields" }, fields.slice(0, 6).map(([id, label]) => input(id, label))),
-    ]),
-    el("section", { class: "zakat-panel" }, [
-      el("h2", {}, "Nisab & liabilities"),
-      el("p", { class: "zakat-panel-copy" }, "Use the current market rate in your currency. Gold Nisab is 87.48g; silver Nisab is 612.36g."),
-      el("div", { class: "zakat-fields zakat-fields--compact" }, [
-        input("goldRate", "Gold price per gram"),
-        input("silverRate", "Silver price per gram"),
-        input("debts", "Immediate debts & bills due", "Only amounts currently payable."),
-      ]),
-      el("label", { class: "zakat-field", for: "nisabMethod" }, [
-        el("span", { class: "zakat-field-label" }, "Nisab method"),
-        el("select", { id: "nisabMethod" }, [
-          el("option", { value: "gold" }, "Gold Nisab (87.48g)"),
-          el("option", { value: "silver" }, "Silver Nisab (612.36g)"),
-        ]),
-      ]),
-    ]),
-    el("button", { class: "btn btn-primary zakat-calculate", type: "submit" }, "Calculate Zakat"),
-  ]);
-  const result = el("section", { class: "zakat-result", id: "zakatResult", "aria-live": "polite" }, [
-    el("p", { class: "zakat-result-label" }, "Your estimated Zakat"),
-    el("strong", { id: "zakatAmount" }, "₹0.00"),
-    el("p", { id: "zakatDetail" }, "Enter your current Gold or Silver rate, then calculate."),
-  ]);
-  const notice = el("p", { class: "zakat-notice" }, "This is an estimate for personal guidance. Zakat rules can differ by asset type and school of thought; consult a qualified scholar for your situation.");
-  const main = el("main", { class: "zakat-page" }, el("div", { class: "container zakat-container" }, [
-    el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), " / Zakat Calculator"]),
-    el("div", { class: "zakat-hero" }, [
-      el("p", { class: "kicker" }, "ZAKAT CALCULATOR"),
-      el("h1", { class: "page-title" }, "Calculate your Zakat"),
-      el("p", {}, "A simple annual estimate based on your Zakatable assets, immediate liabilities, and Nisab method."),
-    ]),
-    form, result, notice,
-  ]));
-  app.appendChild(main);
-  const money = (number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2 }).format(number);
-  const value = (id) => Math.max(0, Number(document.getElementById(id).value) || 0);
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const assets = ["cash", "bank", "gold", "silver", "investments", "receivables"].reduce((sum, id) => sum + value(id), 0);
-    const net = Math.max(0, assets - value("debts"));
-    const nisab = document.getElementById("nisabMethod").value === "gold" ? value("goldRate") * 87.48 : value("silverRate") * 612.36;
-    const hasRate = nisab > 0;
-    const due = hasRate && net >= nisab ? net * 0.025 : 0;
-    document.getElementById("zakatAmount").textContent = money(due);
-    document.getElementById("zakatDetail").textContent = !hasRate
-      ? "Please enter the current market rate for your selected Nisab method."
-      : due > 0
-        ? `Net Zakatable assets: ${money(net)}. Nisab: ${money(nisab)}. Zakat due at 2.5%.`
-        : `Net Zakatable assets: ${money(net)}. Nisab: ${money(nisab)}. Your assets are below the selected Nisab.`;
-    result.classList.add("is-calculated");
-  });
-}
 
 function route() {
   stopHadithTicker();
   const path = window.location.pathname.replace(/^\/+/, "");
   const parts = path.split("/").filter(Boolean);
-  if (parts[0] === "zakat-calculator") {
-    renderZakatCalculator();
+
   if (parts[0] === "search") {
-  } else if (parts[0] === "search") {
     renderSearch(parts[1] ? decodeURIComponent(parts[1]) : "");
   } else if (parts[0] === "favorites") {
     renderFavorites();
