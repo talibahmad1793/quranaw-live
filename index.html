@@ -25,7 +25,7 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QuranAnyWhere — Read the Qur'an and Hadith Online, Free</title>
-    <meta name="description" content="QuranAnyWhere (QuranAW): read the Holy Quran juz by juz and explore authentic Hadith, including Sahih al-Bukhari and Sahih Muslim, with Hinglish translations—free on any device." />
+    <meta name="description" content="Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device." />
     <link rel="canonical" href="https://www.quranaw.com/" />
     <meta name="robots" content="index, follow" />
 
@@ -37,7 +37,7 @@
     <meta name="theme-color" content="#1b4b43" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="QuranAnyWhere (QuranAW)" />
+    <meta property="og:site_name" content="QuranAnyWhere" />
     <meta property="og:title" content="QuranAnyWhere — Read the Qur'an and Hadith Online, Free" />
     <meta property="og:description" content="Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device." />
     <meta property="og:url" content="https://www.quranaw.com/" />
@@ -53,7 +53,7 @@
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "QuranAnyWhere",
-      "alternateName": ["QuranAW", "Quran AW","Quran Any Where"],
+      "alternateName": "QuranAW",
       "url": "https://www.quranaw.com/",
       "description": "Read the Qur'an juz by juz and explore Hinglish translations of major hadith collections online, free.",
       "potentialAction": {
@@ -69,7 +69,7 @@
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "QuranAnyWhere",
-      "alternateName": ["QuranAW", "Quran AW","Quran Any Where"],
+      "alternateName": "QuranAW",
       "url": "https://www.quranaw.com/",
       "logo": "https://www.quranaw.com/android-chrome-512x512.png"
     }
@@ -78,7 +78,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css?v=12" />
+    <link rel="stylesheet" href="/style.css?v=22" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
       pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -86,43 +86,103 @@
     </script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <a href="/" class="brand">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-            <path d="M13 2 L15.2 9.8 L23 12 L15.2 14.2 L13 22 L10.8 14.2 L3 12 L10.8 9.8 Z" fill="var(--gold)" />
-          </svg>
-          <span class="brand-text" data-site-title>QuranAnyWhere</span>
+    <div class="qaw-shell">
+      <button type="button" class="qaw-menu-btn" id="qawMenuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="qawSidebar">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="qaw-sidebar-backdrop" id="qawSidebarBackdrop"></div>
+
+      <aside class="qaw-sidebar" id="qawSidebar">
+        <a href="/" class="qaw-brand">
+          <span class="qaw-brand-mark" aria-hidden="true"></span>
+          <span class="qaw-brand-col">
+            <span class="qaw-brand-name" data-site-title>QuranAnyWhere</span>
+            <span class="qaw-brand-tag">Read · Reflect · Live</span>
+          </span>
         </a>
-        <div class="header-links">
-          <a href="/favorites" class="header-search-link" aria-label="Favorites">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M10 17.3s-6.1-3.8-8.1-7.5C.5 7 1.6 4 4.5 3.3c1.7-.4 3.3.2 4.2 1.6.9-1.4 2.5-2 4.2-1.6 2.9.7 4 3.7 2.6 6.5-2 3.7-8.1 7.5-8.1 7.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-            </svg>
-            <span>Favorites</span>
-            <span id="headerFavCount" class="header-fav-count" style="display:none;"></span>
+
+        <nav class="qaw-nav" aria-label="Main navigation">
+          <a class="qaw-nav-item" data-nav="home" href="/">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Home</span>
           </a>
-          <a href="/search" class="header-search-link" aria-label="Search">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <a class="qaw-nav-item" data-nav="quran" href="/quran-text/1">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Qur'an</span>
+            <span class="qaw-nav-meta">30 juz</span>
+          </a>
+          <a class="qaw-nav-item" data-nav="listen" href="/quran-play/1">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Listen</span>
+            <span class="qaw-nav-meta">Full audio</span>
+          </a>
+          <a class="qaw-nav-item" data-nav="hadith" href="/hadith">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Hadith</span>
+            <span class="qaw-nav-meta" id="qawNavHadithCount"></span>
+          </a>
+          <a class="qaw-nav-item" data-nav="search" href="/search">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Search</span>
+          </a>
+          <a class="qaw-nav-item" data-nav="duas" href="/duas">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Dua &amp; Azkar</span>
+          </a>
+          <a class="qaw-nav-item" data-nav="favorites" href="/favorites">
+            <span class="qaw-nav-dot" aria-hidden="true"></span>
+            <span class="qaw-nav-label">Favorites</span>
+            <span id="headerFavCount" class="qaw-nav-meta qaw-nav-badge" style="display:none;"></span>
+          </a>
+        </nav>
+
+        <div class="qaw-sidebar-foot">
+          <div class="qaw-streak-box">
+            <span class="qaw-streak-kicker">Reading streak</span>
+            <div class="qaw-streak-row">
+              <span class="qaw-streak-num" id="qawSidebarStreakNum">0</span>
+              <span class="qaw-streak-sub">days</span>
+            </div>
+            <div class="qaw-streak-week" id="qawSidebarStreakWeek" aria-hidden="true"></div>
+          </div>
+          <p class="qaw-sidebar-arabic">القرآن والسنة نور الحياة</p>
+        </div>
+      </aside>
+
+      <div class="qaw-main">
+        <div class="qaw-topbar">
+          <form class="qaw-topbar-search" id="qawTopSearch" role="search">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.6"/>
               <line x1="13" y1="13" x2="18" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
-            <span>Search</span>
+            <input type="search" id="qawTopSearchInput" placeholder="Search ayah, hadith, dua…" aria-label="Search" />
+          </form>
+
+          <div class="qaw-theme-toggle" id="qawThemeToggle" role="group" aria-label="Reading theme">
+            <button type="button" class="qaw-theme-btn" data-theme-choice="paper">Paper</button>
+            <button type="button" class="qaw-theme-btn" data-theme-choice="sepia">Sepia</button>
+            <button type="button" class="qaw-theme-btn" data-theme-choice="night">Night</button>
+          </div>
+
+          <a class="qaw-prayer-chip" id="qawPrayerChip" href="/prayer-times">
+            <span class="qaw-prayer-dot" aria-hidden="true"></span>
+            <span id="qawPrayerLabel">Finding your location…</span>
           </a>
         </div>
-      </div>
-    </header>
 
-    <div id="app">
-      <!-- Static fallback content: visible to crawlers that don't execute JS
-           (or time out before it runs). app.js immediately clears and
-           replaces this the moment it loads, so JS-enabled visitors never
-           see it. Keeps a real H1 + description in the raw HTML at all times. -->
-      <main class="container" style="padding-top: 40px;">
-        <h1 class="page-title">QuranAnyWhere</h1>
-        <p>Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim &amp; more hadith collections — free, anywhere, on any device.</p>
-      </main>
-    </div>
+        <div id="app">
+          <!-- Static fallback content: visible to crawlers that don't execute JS
+               (or time out before it runs). app.js immediately clears and
+               replaces this the moment it loads, so JS-enabled visitors never
+               see it. Keeps a real H1 + description in the raw HTML at all times. -->
+          <main class="container" style="padding-top: 40px;">
+            <h1 class="page-title">QuranAnyWhere</h1>
+            <p>Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim &amp; more hadith collections — free, anywhere, on any device.</p>
+          </main>
+        </div>
 
     <footer class="site-footer">
       <div class="container footer-top">
@@ -163,7 +223,7 @@
           <h3 class="footer-col-title">Quran</h3>
           <ul>
             <li><a href="/quran-text/1">Read Quran</a></li>
-            <li><span class="footer-link-soon" title="Coming soon">Surahs</span></li>
+            <li><a href="/quran-text/1">Surahs</a></li>
             <li><a href="/quran-text/1">Juz / Para</a></li>
             <li><a href="/quran-text/1">Translation</a></li>
             <li><span class="footer-link-soon" title="Coming soon">Tafsir</span></li>
@@ -188,9 +248,9 @@
             <li><span class="footer-link-soon" title="Coming soon">Daily Verse</span></li>
             <li><a href="/duas">Dua &amp; Azkar</a></li>
             <li><span class="footer-link-soon" title="Coming soon">Islamic Articles</span></li>
-            <li><span class="footer-link-soon" title="Coming soon">Prayer Times</span></li>
-            <li><span class="footer-link-soon" title="Coming soon">Islamic Calendar</span></li>
-            <li><span class="footer-link-soon" title="Coming soon">Qibla Direction</span></li>
+            <li><a href="/prayer-times">Prayer Times</a></li>
+            <li><a href="/islamic-calendar">Islamic Calendar</a></li>
+            <li><a href="/prayer-times">Qibla Direction</a></li>
           </ul>
         </nav>
 
@@ -221,8 +281,20 @@
       </div>
     </footer>
 
-    <script src="/config.js?v=11"></script>
-    <script src="/app.js?v=12"></script>
+      </div><!-- /.qaw-main -->
+    </div><!-- /.qaw-shell -->
+
+    <div class="qaw-install-banner" id="qawInstallBanner" style="display:none;" role="status">
+      <span class="qaw-install-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 3v10m0 0 4-4m-4 4-4-4M4 15v1.5A1.5 1.5 0 0 0 5.5 18h9a1.5 1.5 0 0 0 1.5-1.5V15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="qaw-install-text" id="qawInstallText">Install QuranAW for quick, offline-ready access</span>
+      <button type="button" class="qaw-install-btn" id="qawInstallBtn">Install</button>
+      <button type="button" class="qaw-install-close" id="qawInstallClose" aria-label="Dismiss">&times;</button>
+    </div>
+
+    <script src="/config.js?v=12"></script>
+    <script src="/app.js?v=22"></script>
     <script>
       document.querySelectorAll("[data-year]").forEach((el) => {
         el.textContent = new Date().getFullYear();

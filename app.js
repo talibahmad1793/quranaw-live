@@ -1,4 +1,9 @@
 const cfg = window.SITE_CONFIG;
+// LIVE-SITE: this deploys at the domain root (www.quranaw.com), not as a
+// GitHub Pages project subfolder like the UAT deploy. BASE_PATH stays empty
+// so every root-absolute reference (routing, data fetches, manifests,
+// static assets) resolves directly off the domain root.
+const BASE_PATH = "";
 const SITE_ORIGIN = "https://www.quranaw.com";
 
 // Updates the document title, meta description, canonical URL, and OG tags
@@ -35,7 +40,7 @@ function setMeta({ title, description, full }) {
 // current path) - now that routing uses real paths like /hadith/bukhari
 // instead of "#/..." hashes, a relative "." would resolve against whatever
 // the current URL happens to be (e.g. "/hadith/") and silently 404.
-const RAW_ROOT = "";
+const RAW_ROOT = BASE_PATH;
 const PROGRESS_PREFIX = "qaw:progress:";
 
 // Verified, structured Quran text data (not OCR). Sourced originally from
@@ -59,6 +64,8 @@ const HADITH_BOOKS = [
     name: "Sahih al-Bukhari",
     arabic: "صحيح البخاري",
     group: "major",
+    count: 7278,
+    status: "ready",
     shortDesc:
       "Sahih al-Bukhari is a collection of hadith compiled by Imam Muhammad al-Bukhari (d. 256 AH/870 CE) (rahimahullah). His collection is recognized by the overwhelming majority of the Muslim world to be the most authentic collection of reports of the Sunnah of the Prophet Muhammad (\uFDFA). It contains over 7500 hadith (with repetitions) in 97 books. The translation provided here is by Dr. M. Muhsin Khan.",
   },
@@ -67,6 +74,8 @@ const HADITH_BOOKS = [
     name: "Sahih Muslim",
     arabic: "صحيح مسلم",
     group: "major",
+    count: 7461,
+    status: "ready",
     shortDesc:
       "Sahih Muslim is a collection of hadith compiled by Imam Muslim ibn al-Hajjaj al-Naysaburi (rahimahullah). His collection is considered one of the most authentic collections of the Sunnah of the Prophet Muhammad (\uFDFA), and together with Sahih al-Bukhari forms the \u2018Sahihain\u2019 (the Two Sahihs). It contains roughly 7,500 hadith (with repetitions) in 57 books. The translation provided here is by Abdul Hamid Siddiqui.",
   },
@@ -75,6 +84,8 @@ const HADITH_BOOKS = [
     name: "Sunan Abi Dawud",
     arabic: "سنن أبي داود",
     group: "major",
+    count: 5274,
+    status: "ready",
     shortDesc:
       "Sunan Abi Dawud is a collection of hadith compiled by Imam Abu Dawud Sulaiman ibn al-Ash\u2019ath as-Sijistani (rahimahullah). It is one of the six canonical hadith collections (Kutub as-Sittah) and contains 5,274 hadith in 43 books.",
     extraLinks: [
@@ -89,6 +100,8 @@ const HADITH_BOOKS = [
     name: "Jami' at-Tirmidhi",
     arabic: "جامع الترمذي",
     group: "major",
+    count: 3998,
+    status: "ready",
     shortDesc:
       "Jami' at-Tirmidhi is a collection of hadith compiled by Imam Abu 'Isa Muhammad at-Tirmidhi (rahimahullah). It is one of the six canonical collections of hadith (Kutub as-Sittah) and contains roughly 4,400 hadith (with repetitions) in 46 books.",
   },
@@ -97,6 +110,8 @@ const HADITH_BOOKS = [
     name: "Sunan an-Nasa'i",
     arabic: "سنن النسائي",
     group: "major",
+    count: 5683,
+    status: "progress",
     shortDesc:
       "Sunan an-Nasa'i is a collection of hadith compiled by Imam Ahmad an-Nasa'i (rahimahullah). It is unanimously regarded as one of the six canonical collections of hadith (Kutub as-Sittah) and contains roughly 5,700 hadith (with repetitions) in 52 books.",
   },
@@ -105,6 +120,8 @@ const HADITH_BOOKS = [
     name: "Sunan Ibn Majah",
     arabic: "سنن ابن ماجه",
     group: "major",
+    count: 4341,
+    status: "ready",
     shortDesc:
       "Sunan Ibn Majah is a collection of hadith compiled by Imam Muhammad bin Yazid Ibn Majah al-Qazvini (rahimahullah). It is widely regarded as the sixth of the six canonical collections of hadith (Kutub as-Sittah) and contains 4,341 hadith arranged in 37 books.",
   },
@@ -113,6 +130,8 @@ const HADITH_BOOKS = [
     name: "Muwatta Malik",
     arabic: "موطأ مالك",
     group: "major",
+    count: 1840,
+    status: "ready",
     shortDesc:
       "Al-Muwatta of Imam Malik is one of the earliest and most influential collections of hadith and Islamic jurisprudence, compiled by Imam Malik ibn Anas (rahimahullah). It contains hadith, statements of the Companions, opinions of the Tabi'in, and the legal practice of the people of Madinah.",
   },
@@ -121,6 +140,8 @@ const HADITH_BOOKS = [
     name: "Sunan ad-Darimi",
     arabic: "سنن الدارمي",
     group: "major",
+    count: 3406,
+    status: "ready",
     shortDesc:
       "Sunan ad-Darimi is a collection of hadith compiled by Imam Abu Muhammad Abd Allah ibn Abd al-Rahman ad-Darimi (rahimahullah). It contains roughly 3,400 hadith arranged across the major books of fiqh and belief.",
   },
@@ -170,6 +191,223 @@ const SURAH_NAMES = [
   "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas",
 ];
 
+// Per-surah metadata: Arabic name, revelation type, ayah count, and the juz
+// number this surah *starts* in (computed from this project's own
+// quran-data files) - used to build the Surah tab list and its links.
+const SURAH_META = [
+  null, // 1-indexed
+  { ar: "الفاتحة", type: "Meccan", ayahs: 7, juz: 1 },
+  { ar: "البقرة", type: "Medinan", ayahs: 286, juz: 1 },
+  { ar: "آل عمران", type: "Medinan", ayahs: 200, juz: 3 },
+  { ar: "النساء", type: "Medinan", ayahs: 176, juz: 4 },
+  { ar: "المائدة", type: "Medinan", ayahs: 120, juz: 6 },
+  { ar: "الأنعام", type: "Meccan", ayahs: 165, juz: 7 },
+  { ar: "الأعراف", type: "Meccan", ayahs: 206, juz: 8 },
+  { ar: "الأنفال", type: "Medinan", ayahs: 75, juz: 9 },
+  { ar: "التوبة", type: "Medinan", ayahs: 129, juz: 10 },
+  { ar: "يونس", type: "Meccan", ayahs: 109, juz: 11 },
+  { ar: "هود", type: "Meccan", ayahs: 123, juz: 11 },
+  { ar: "يوسف", type: "Meccan", ayahs: 111, juz: 12 },
+  { ar: "الرعد", type: "Medinan", ayahs: 43, juz: 13 },
+  { ar: "إبراهيم", type: "Meccan", ayahs: 52, juz: 13 },
+  { ar: "الحجر", type: "Meccan", ayahs: 99, juz: 14 },
+  { ar: "النحل", type: "Meccan", ayahs: 128, juz: 14 },
+  { ar: "الإسراء", type: "Meccan", ayahs: 111, juz: 15 },
+  { ar: "الكهف", type: "Meccan", ayahs: 110, juz: 15 },
+  { ar: "مريم", type: "Meccan", ayahs: 98, juz: 16 },
+  { ar: "طه", type: "Meccan", ayahs: 135, juz: 16 },
+  { ar: "الأنبياء", type: "Meccan", ayahs: 112, juz: 17 },
+  { ar: "الحج", type: "Medinan", ayahs: 78, juz: 17 },
+  { ar: "المؤمنون", type: "Meccan", ayahs: 118, juz: 18 },
+  { ar: "النور", type: "Medinan", ayahs: 64, juz: 18 },
+  { ar: "الفرقان", type: "Meccan", ayahs: 77, juz: 18 },
+  { ar: "الشعراء", type: "Meccan", ayahs: 227, juz: 19 },
+  { ar: "النمل", type: "Meccan", ayahs: 93, juz: 19 },
+  { ar: "القصص", type: "Meccan", ayahs: 88, juz: 20 },
+  { ar: "العنكبوت", type: "Meccan", ayahs: 69, juz: 20 },
+  { ar: "الروم", type: "Meccan", ayahs: 60, juz: 21 },
+  { ar: "لقمان", type: "Meccan", ayahs: 34, juz: 21 },
+  { ar: "السجدة", type: "Meccan", ayahs: 30, juz: 21 },
+  { ar: "الأحزاب", type: "Medinan", ayahs: 73, juz: 21 },
+  { ar: "سبأ", type: "Meccan", ayahs: 54, juz: 22 },
+  { ar: "فاطر", type: "Meccan", ayahs: 45, juz: 22 },
+  { ar: "يس", type: "Meccan", ayahs: 83, juz: 22 },
+  { ar: "الصافات", type: "Meccan", ayahs: 182, juz: 23 },
+  { ar: "ص", type: "Meccan", ayahs: 88, juz: 23 },
+  { ar: "الزمر", type: "Meccan", ayahs: 75, juz: 23 },
+  { ar: "غافر", type: "Meccan", ayahs: 85, juz: 24 },
+  { ar: "فصلت", type: "Meccan", ayahs: 54, juz: 24 },
+  { ar: "الشورى", type: "Meccan", ayahs: 53, juz: 25 },
+  { ar: "الزخرف", type: "Meccan", ayahs: 89, juz: 25 },
+  { ar: "الدخان", type: "Meccan", ayahs: 59, juz: 25 },
+  { ar: "الجاثية", type: "Meccan", ayahs: 37, juz: 25 },
+  { ar: "الأحقاف", type: "Meccan", ayahs: 35, juz: 26 },
+  { ar: "محمد", type: "Medinan", ayahs: 38, juz: 26 },
+  { ar: "الفتح", type: "Medinan", ayahs: 29, juz: 26 },
+  { ar: "الحجرات", type: "Medinan", ayahs: 18, juz: 26 },
+  { ar: "ق", type: "Meccan", ayahs: 45, juz: 26 },
+  { ar: "الذاريات", type: "Meccan", ayahs: 60, juz: 26 },
+  { ar: "الطور", type: "Meccan", ayahs: 49, juz: 27 },
+  { ar: "النجم", type: "Meccan", ayahs: 62, juz: 27 },
+  { ar: "القمر", type: "Meccan", ayahs: 55, juz: 27 },
+  { ar: "الرحمن", type: "Medinan", ayahs: 78, juz: 27 },
+  { ar: "الواقعة", type: "Meccan", ayahs: 96, juz: 27 },
+  { ar: "الحديد", type: "Medinan", ayahs: 29, juz: 27 },
+  { ar: "المجادلة", type: "Medinan", ayahs: 22, juz: 28 },
+  { ar: "الحشر", type: "Medinan", ayahs: 24, juz: 28 },
+  { ar: "الممتحنة", type: "Medinan", ayahs: 13, juz: 28 },
+  { ar: "الصف", type: "Medinan", ayahs: 14, juz: 28 },
+  { ar: "الجمعة", type: "Medinan", ayahs: 11, juz: 28 },
+  { ar: "المنافقون", type: "Medinan", ayahs: 11, juz: 28 },
+  { ar: "التغابن", type: "Medinan", ayahs: 18, juz: 28 },
+  { ar: "الطلاق", type: "Medinan", ayahs: 12, juz: 28 },
+  { ar: "التحريم", type: "Medinan", ayahs: 12, juz: 28 },
+  { ar: "الملك", type: "Meccan", ayahs: 30, juz: 29 },
+  { ar: "القلم", type: "Meccan", ayahs: 52, juz: 29 },
+  { ar: "الحاقة", type: "Meccan", ayahs: 52, juz: 29 },
+  { ar: "المعارج", type: "Meccan", ayahs: 44, juz: 29 },
+  { ar: "نوح", type: "Meccan", ayahs: 28, juz: 29 },
+  { ar: "الجن", type: "Meccan", ayahs: 28, juz: 29 },
+  { ar: "المزمل", type: "Meccan", ayahs: 20, juz: 29 },
+  { ar: "المدثر", type: "Meccan", ayahs: 56, juz: 29 },
+  { ar: "القيامة", type: "Meccan", ayahs: 40, juz: 29 },
+  { ar: "الإنسان", type: "Medinan", ayahs: 31, juz: 29 },
+  { ar: "المرسلات", type: "Meccan", ayahs: 50, juz: 29 },
+  { ar: "النبأ", type: "Meccan", ayahs: 40, juz: 30 },
+  { ar: "النازعات", type: "Meccan", ayahs: 46, juz: 30 },
+  { ar: "عبس", type: "Meccan", ayahs: 42, juz: 30 },
+  { ar: "التكوير", type: "Meccan", ayahs: 29, juz: 30 },
+  { ar: "الإنفطار", type: "Meccan", ayahs: 19, juz: 30 },
+  { ar: "المطففين", type: "Meccan", ayahs: 36, juz: 30 },
+  { ar: "الإنشقاق", type: "Meccan", ayahs: 25, juz: 30 },
+  { ar: "البروج", type: "Meccan", ayahs: 22, juz: 30 },
+  { ar: "الطارق", type: "Meccan", ayahs: 17, juz: 30 },
+  { ar: "الأعلى", type: "Meccan", ayahs: 19, juz: 30 },
+  { ar: "الغاشية", type: "Meccan", ayahs: 26, juz: 30 },
+  { ar: "الفجر", type: "Meccan", ayahs: 30, juz: 30 },
+  { ar: "البلد", type: "Meccan", ayahs: 20, juz: 30 },
+  { ar: "الشمس", type: "Meccan", ayahs: 15, juz: 30 },
+  { ar: "الليل", type: "Meccan", ayahs: 21, juz: 30 },
+  { ar: "الضحى", type: "Meccan", ayahs: 11, juz: 30 },
+  { ar: "الشرح", type: "Meccan", ayahs: 8, juz: 30 },
+  { ar: "التين", type: "Meccan", ayahs: 8, juz: 30 },
+  { ar: "العلق", type: "Meccan", ayahs: 19, juz: 30 },
+  { ar: "القدر", type: "Meccan", ayahs: 5, juz: 30 },
+  { ar: "البينة", type: "Medinan", ayahs: 8, juz: 30 },
+  { ar: "الزلزلة", type: "Medinan", ayahs: 8, juz: 30 },
+  { ar: "العاديات", type: "Meccan", ayahs: 11, juz: 30 },
+  { ar: "القارعة", type: "Meccan", ayahs: 11, juz: 30 },
+  { ar: "التكاثر", type: "Meccan", ayahs: 8, juz: 30 },
+  { ar: "العصر", type: "Meccan", ayahs: 3, juz: 30 },
+  { ar: "الهمزة", type: "Meccan", ayahs: 9, juz: 30 },
+  { ar: "الفيل", type: "Meccan", ayahs: 5, juz: 30 },
+  { ar: "قريش", type: "Meccan", ayahs: 4, juz: 30 },
+  { ar: "الماعون", type: "Meccan", ayahs: 7, juz: 30 },
+  { ar: "الكوثر", type: "Meccan", ayahs: 3, juz: 30 },
+  { ar: "الكافرون", type: "Meccan", ayahs: 6, juz: 30 },
+  { ar: "النصر", type: "Medinan", ayahs: 3, juz: 30 },
+  { ar: "المسد", type: "Meccan", ayahs: 5, juz: 30 },
+  { ar: "الإخلاص", type: "Meccan", ayahs: 4, juz: 30 },
+  { ar: "الفلق", type: "Meccan", ayahs: 5, juz: 30 },
+  { ar: "الناس", type: "Meccan", ayahs: 6, juz: 30 },
+];
+
+/* =============================================================================
+   QuranAW — recitation audio. Streams from cdn.islamic.network (the CDN
+   behind alquran.cloud) - free, no API key, CORS-open. Reciter: Mishary
+   Rashid Alafasy (ar.alafasy), a widely-used default edition on that CDN.
+   Only one clip plays at a time. Clicking the active button again pauses
+   in place (resume continues from the same position, not the start).
+   ========================================================================== */
+const QAW_RECITER_EDITION = "ar.alafasy";
+const QAW_RECITER_BITRATE = 128;
+let qawAudioEl = null;
+let qawAudioActiveBtn = null;
+let qawAudioActiveUrl = null;
+
+// Converts (surah, ayah) into the Quran-wide ayah number (1-6236) the CDN
+// indexes by, using this project's own verified per-surah ayah counts.
+function qawGlobalAyahNumber(s, a) {
+  let total = a;
+  for (let i = 1; i < s; i++) total += SURAH_META[i].ayahs;
+  return total;
+}
+
+function qawAyahAudioUrl(s, a) {
+  return `https://cdn.islamic.network/quran/audio/${QAW_RECITER_BITRATE}/${QAW_RECITER_EDITION}/${qawGlobalAyahNumber(s, a)}.mp3`;
+}
+
+function qawSurahAudioUrl(s) {
+  return `https://cdn.islamic.network/quran/audio-surah/${QAW_RECITER_BITRATE}/${QAW_RECITER_EDITION}/${s}.mp3`;
+}
+
+function qawStopAudio() {
+  if (qawAudioEl) {
+    qawAudioEl.onended = null;
+    qawAudioEl.pause();
+  }
+  if (qawAudioActiveBtn) {
+    qawAudioActiveBtn.textContent = qawAudioActiveBtn.dataset.playLabel || "Play";
+  }
+  qawAudioActiveBtn = null;
+  qawAudioActiveUrl = null;
+}
+
+// Plays a recitation URL through a single shared <audio> element.
+// - Clicking the SAME button while that exact track is active toggles
+//   pause/resume in place (position is preserved).
+// - Clicking a different Play button (or a new track) stops whatever was
+//   playing first and starts the new one from the beginning.
+// - `onFinished`, if given, fires after the recitation ends naturally (not
+//   on manual pause/stop) - used to auto-advance a playlist.
+function qawPlayAudioUrl(url, btn, label, onFinished) {
+  const isSameTrack = qawAudioActiveBtn === btn && qawAudioActiveUrl === url && qawAudioEl;
+  if (isSameTrack) {
+    if (qawAudioEl.paused) {
+      qawAudioEl.play().then(() => {
+        if (qawAudioActiveBtn === btn) btn.textContent = "Pause";
+      }, () => {});
+    } else {
+      qawAudioEl.pause();
+      btn.textContent = "Resume";
+    }
+    return;
+  }
+
+  qawStopAudio();
+  if (!qawAudioEl) qawAudioEl = new Audio();
+  qawAudioEl.src = url;
+  qawAudioActiveUrl = url;
+  btn.dataset.playLabel = label;
+  qawAudioActiveBtn = btn;
+  btn.textContent = "Loading\u2026";
+
+  qawAudioEl.play().then(
+    () => {
+      if (qawAudioActiveBtn === btn) btn.textContent = "Pause";
+    },
+    () => {
+      btn.textContent = "Couldn't play audio";
+      if (qawAudioActiveBtn === btn) {
+        qawAudioActiveBtn = null;
+        qawAudioActiveUrl = null;
+      }
+      setTimeout(() => {
+        if (btn.textContent === "Couldn't play audio") btn.textContent = label;
+      }, 2000);
+    }
+  );
+
+  qawAudioEl.onended = () => {
+    if (qawAudioActiveBtn !== btn) return; // superseded by another track already
+    btn.textContent = label;
+    qawAudioActiveBtn = null;
+    qawAudioActiveUrl = null;
+    if (onFinished) onFinished();
+  };
+}
+
+
 const app = document.getElementById("app");
 
 document.title = cfg.siteTitle;
@@ -192,7 +430,7 @@ function titleFromSlug(slug) {
 // its own manifest.json listing its PDF files. Regenerate these with
 // generate-manifests.py whenever you add/remove a book or PDF file.
 async function githubList(path) {
-  const url = path ? `/${path}/manifest.json` : `/manifest.json`;
+  const url = path ? `${BASE_PATH}/${path}/manifest.json` : `${BASE_PATH}/manifest.json`;
   const res = await fetch(url);
   if (!res.ok) {
     if (res.status === 404) throw new Error("manifest.json not found. Run generate-manifests.py after adding files.");
@@ -331,8 +569,39 @@ function setProgress(bookSlug, file, page) {
 }
 
 function partHref(bookSlug, fileName, page) {
-  const base = `/book/${encodeURIComponent(bookSlug)}/part/${encodeURIComponent(fileName)}`;
+  const base = `${BASE_PATH}/book/${encodeURIComponent(bookSlug)}/part/${encodeURIComponent(fileName)}`;
   return page && page > 1 ? `${base}/page/${page}` : base;
+}
+
+// --- Qur'an (JSON reader) reading progress - separate from the PDF-page
+// progress above. Tracks the last ayah the visitor scrolled to within a
+// juz, plus how far through that juz's ayah list they've reached, so the
+// home "Continue reading" panel can resume at the right place.
+const QURAN_PROGRESS_SLUG = "quran-text";
+
+function getQuranProgress() {
+  return getProgress(QURAN_PROGRESS_SLUG);
+}
+
+function setQuranProgress(juz, s, a, percent) {
+  try {
+    localStorage.setItem(
+      PROGRESS_PREFIX + QURAN_PROGRESS_SLUG,
+      JSON.stringify({ juz, s, a, percent, updatedAt: Date.now() })
+    );
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+function qawRelativeTime(ts) {
+  const diffMin = Math.round((Date.now() - ts) / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `${diffH} hour${diffH > 1 ? "s" : ""} ago`;
+  const diffD = Math.round(diffH / 24);
+  return `${diffD} day${diffD > 1 ? "s" : ""} ago`;
 }
 
 // --- Favorite hadith (kept in the visitor's own browser only, like reading
@@ -396,91 +665,339 @@ function updateFavoritesBadge() {
   badge.style.display = count > 0 ? "" : "none";
 }
 
+// --- Favorite ayah (Qur'an verses) - shares the same FAVORITES_KEY store as
+// hadith favorites above, distinguished by an "ayah:" id prefix and a
+// kind:"ayah" field so renderFavorites() can render each kind correctly.
+// Only the identity + which juz file it lives in is stored; the actual
+// Arabic/translation text is re-fetched from quran-data at display time.
+function ayahFavoriteId(s, a) {
+  return `ayah:${s}:${a}`;
+}
+
+function isAyahFavorited(s, a) {
+  const id = ayahFavoriteId(s, a);
+  return getFavorites().some((f) => f.id === id);
+}
+
+function toggleAyahFavorite(s, a, meta) {
+  const id = ayahFavoriteId(s, a);
+  const list = getFavorites();
+  const idx = list.findIndex((f) => f.id === id);
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    saveFavorites(list);
+    updateFavoritesBadge();
+    return false;
+  }
+  list.unshift(Object.assign({ id, kind: "ayah", s, a, savedAt: Date.now() }, meta));
+  saveFavorites(list);
+  updateFavoritesBadge();
+  return true;
+}
+
+// --- Favorite dua - same store, "dua:" id prefix, kind:"dua". Only the
+// index + a display snapshot is kept; renderFavorites re-fetches duas.json
+// for the live text where possible and falls back to the snapshot.
+function duaFavoriteId(i) {
+  return `dua:${i}`;
+}
+
+function isDuaFavorited(i) {
+  const id = duaFavoriteId(i);
+  return getFavorites().some((f) => f.id === id);
+}
+
+function toggleDuaFavorite(i, meta) {
+  const id = duaFavoriteId(i);
+  const list = getFavorites();
+  const idx = list.findIndex((f) => f.id === id);
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    saveFavorites(list);
+    updateFavoritesBadge();
+    return false;
+  }
+  list.unshift(Object.assign({ id, kind: "dua", i, savedAt: Date.now() }, meta));
+  saveFavorites(list);
+  updateFavoritesBadge();
+  return true;
+}
+
+// --- Tasbeeh counters: a simple per-dua lifetime tally, kept locally. ---
+const QAW_TASBEEH_KEY = "qaw:tasbeeh";
+
+function qawGetTasbeehCounts() {
+  try {
+    return JSON.parse(localStorage.getItem(QAW_TASBEEH_KEY) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+function qawIncrementTasbeeh(i) {
+  const counts = qawGetTasbeehCounts();
+  counts[i] = (counts[i] || 0) + 1;
+  try {
+    localStorage.setItem(QAW_TASBEEH_KEY, JSON.stringify(counts));
+  } catch (e) {
+    /* storage unavailable */
+  }
+  return counts[i];
+}
+
+// Best-effort Hinglish "when to say this" tag derived from a dua's title,
+// since duas.json doesn't carry a separate timing field. Falls back to a
+// generic label rather than guessing wrong.
+function qawDuaTiming(title) {
+  const t = title.toLowerCase();
+  if (t.includes("sleep")) return "Sone se pehle";
+  if (t.includes("waking") || t.includes("wake")) return "Jagne ke baad";
+  if (t.includes("entering the toilet")) return "Toilet jaate waqt";
+  if (t.includes("leaving the toilet")) return "Toilet se nikalte waqt";
+  if (t.includes("before & after meals") || t.includes("before and after meals")) return "Khane se pehle/baad";
+  if (t.includes("before eating")) return "Khane se pehle";
+  if (t.includes("after eating")) return "Khane ke baad";
+  if (t.includes("entering & leaving home") || t.includes("entering and leaving home")) return "Ghar aate/jaate waqt";
+  if (t.includes("entering home")) return "Ghar mein aate waqt";
+  if (t.includes("travel")) return "Safar ke waqt";
+  if (t.includes("hearing someone sneeze")) return "Kisi ko chheenkte sunkar";
+  if (t.includes("sneezer")) return "Chheenkne wale ka jawab";
+  if (t.includes("sneez")) return "Chheenk aane par";
+  if (t.includes("adhaan") || t.includes("azaan")) return "Azaan ke baad";
+  if (t.includes("breaking fast") || t.includes("iftar")) return "Iftar ke waqt";
+  return "Har waqt";
+}
+
+//replace code 
+/* =============================================================================
+   QuranAW — new home page  (v2 — BASE_PATH aware, fully namespaced)
+   Drop-in replacement for renderHome() in app.js.
+   Uses only existing helpers: el, cfg, setMeta, githubList, naturalSort,
+   titleFromSlug, getProgress, partHref, startHadithTicker, renderLoading,
+   renderError, PROGRESS_PREFIX, getFavorites, BASE_PATH.
+   Every CSS class it emits is prefixed home- (except the existing .grid /
+   .card / .state-msg library classes, reused on purpose).
+   ========================================================================== */
+
+const QAW_DAILY_VERSES = [
+  { s: 2, a: 153, juz: 2, arabic: "إِنَّ اللَّهَ مَعَ الصَّابِرِينَ", hinglish: "Beshak Allah sabr karne walon ke saath hai.", ref: "Al-Baqarah 2:153" },
+  { s: 65, a: 3, juz: 28, arabic: "وَيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُ", hinglish: "Aur use wahan se rizq deta hai jahan se woh soch bhi nahi sakta.", ref: "At-Talaq 65:3" },
+  { s: 94, a: 5, juz: 30, arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا", hinglish: "Beshak har mushkil ke saath aasani hai.", ref: "Ash-Sharh 94:5" },
+  { s: 20, a: 114, juz: 16, arabic: "وَقُل رَّبِّ زِدْنِي عِلْمًا", hinglish: "Aur kahiye: ae mere Rabb, mera ilm badha de.", ref: "Ta-Ha 20:114" },
+  { s: 13, a: 28, juz: 13, arabic: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ", hinglish: "Yaad rakho — Allah ke zikr se hi dilon ko sukoon milta hai.", ref: "Ar-Ra'd 13:28" },
+  { s: 62, a: 11, juz: 28, arabic: "وَاللَّهُ خَيْرُ الرَّازِقِينَ", hinglish: "Aur Allah hi sabse behtar rizq dene wala hai.", ref: "Al-Jumu'ah 62:11" },
+  { s: 2, a: 201, juz: 2, arabic: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً", hinglish: "Ae hamare Rabb, humein duniya mein behtari de.", ref: "Al-Baqarah 2:201" },
+];
+
+function qawVerseOfTheDay() {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const day = Math.floor((new Date() - start) / 86400000);
+  return QAW_DAILY_VERSES[day % QAW_DAILY_VERSES.length];
+}
+
+/* --- Reading streak: local-only day log ------------------------------------ */
+const QAW_DAYS_KEY = "qaw:days";
+
+function qawTouchStreak() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    let days = JSON.parse(localStorage.getItem(QAW_DAYS_KEY) || "[]");
+    if (days[days.length - 1] !== today) days.push(today);
+    days = days.slice(-400);
+    localStorage.setItem(QAW_DAYS_KEY, JSON.stringify(days));
+    return days;
+  } catch (e) {
+    return [];
+  }
+}
+
+function qawStreakInfo() {
+  const set = new Set(qawTouchStreak());
+  const iso = (d) => d.toISOString().slice(0, 10);
+  let streak = 0;
+  const cursor = new Date();
+  while (set.has(iso(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  const week = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    week.push(set.has(iso(d)));
+  }
+  return { streak, week };
+}
+
+/* --- Most recently read book across all stored progress -------------------- */
+function qawLatestProgress() {
+  let best = null;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || key.indexOf(PROGRESS_PREFIX) !== 0) continue;
+      const slug = key.slice(PROGRESS_PREFIX.length);
+      const p = getProgress(slug);
+      if (!p || !p.file) continue;
+      if (!best || (p.updatedAt || 0) > (best.updatedAt || 0)) best = Object.assign({ slug }, p);
+    }
+  } catch (e) {
+    /* storage unavailable */
+  }
+  return best;
+}
+
+/* --- Home ------------------------------------------------------------------ */
 async function renderHome() {
   setMeta({
     full: "QuranAnyWhere — Read the Qur'an and Hadith Online, Free",
-    description: "Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device.",
+    description:
+      "Read the Qur'an juz by juz and explore Hinglish translations of Sahih al-Bukhari, Sahih Muslim & more hadith collections — free, anywhere, on any device.",
   });
   app.innerHTML = "";
-  const hero = el("section", { class: "hero" }, [
-    el("div", { class: "container" }, [
-      el("p", { class: "eyebrow" }, "\u0628\u0650\u0633\u0652\u0645\u0650 \u0627\u0644\u0644\u0651\u0647\u0650 \u0627\u0644\u0631\u0651\u064e\u062d\u0652\u0645\u064e\u0670\u0646\u0650 \u0627\u0644\u0631\u0651\u064e\u062d\u0650\u064a\u0645\u0650"),
-      el("h1", {}, cfg.siteTitle),
-      el("p", {}, cfg.tagline),
+
+  const main = el("main", { class: "container home" });
+  app.appendChild(main);
+
+  /* Row 1 — continue reading + verse of the day */
+  const qProgress = getQuranProgress();
+  const { streak, week } = qawStreakInfo();
+  const verse = qawVerseOfTheDay();
+
+  const resumeChildren = [
+    el("span", { class: "home-kicker" }, qProgress ? "Continue reading" : "Start reading"),
+    el(
+      "h2",
+      { class: "home-resume-title" },
+      qProgress ? `${SURAH_NAMES[qProgress.s] || "Surah " + qProgress.s}, ayah ${qProgress.a}` : "The Holy Qur'an"
+    ),
+    el(
+      "p",
+      { class: "home-resume-meta" },
+      qProgress
+        ? `Juz ${qProgress.juz} \u00b7 ${qProgress.percent}% complete \u00b7 last read ${qawRelativeTime(qProgress.updatedAt)}`
+        : "Juz by juz — Arabic, transliteration and translation."
+    ),
+  ];
+
+  if (qProgress) {
+    resumeChildren.push(
+      el("div", { class: "home-progress-bar" }, [
+        el("div", { class: "home-progress-fill", style: `width:${qProgress.percent}%` }),
+      ])
+    );
+  }
+
+  const playBtn = el("button", { class: "home-btn home-btn-ghost", type: "button" }, "Play recitation");
+  playBtn.addEventListener("click", () => {
+    const surahNum = qProgress && qProgress.s ? qProgress.s : 1;
+    qawPlayAudioUrl(qawSurahAudioUrl(surahNum), playBtn, "Play recitation");
+  });
+
+  resumeChildren.push(
+    el("div", { class: "home-actions" }, [
+      el(
+        "a",
+        {
+          class: "home-btn home-btn-cream",
+          href: qProgress ? `${BASE_PATH}/quran-text/${qProgress.juz}/v/${qProgress.s}/${qProgress.a}` : `${BASE_PATH}/quran-text/1`,
+        },
+        qProgress ? `Resume Juz ${qProgress.juz}` : "Read Qur'an"
+      ),
+      playBtn,
+    ])
+  );
+
+  if (streak > 1) {
+    resumeChildren.push(
+      el("div", { class: "home-streak" }, [
+        el("span", { class: "home-streak-count" }, String(streak)),
+        el("span", { class: "home-streak-label" }, "din lagatar · MashaAllah"),
+        el(
+          "div",
+          { class: "home-streak-week", "aria-hidden": "true" },
+          week.map((on) => el("span", { class: on ? "home-streak-dot is-on" : "home-streak-dot" }))
+        ),
+      ])
+    );
+  }
+
+  const resume = el("section", { class: "home-panel home-panel-emerald" }, resumeChildren);
+
+  const dailyFavSaved = isAyahFavorited(verse.s, verse.a);
+  const dailyFavBtn = el(
+    "button",
+    { class: `btn btn-ghost home-verse-save${dailyFavSaved ? " is-active" : ""}`, type: "button" },
+    dailyFavSaved ? "Saved" : "Save verse"
+  );
+  dailyFavBtn.addEventListener("click", () => {
+    const now = toggleAyahFavorite(verse.s, verse.a, { juz: verse.juz, ar: verse.arabic, t: "", u: verse.hinglish, surahName: SURAH_NAMES[verse.s] });
+    dailyFavBtn.textContent = now ? "Saved" : "Save verse";
+    dailyFavBtn.classList.toggle("is-active", now);
+  });
+
+  const daily = el("section", { class: "home-panel home-panel-verse" }, [
+    el("span", { class: "home-kicker home-kicker-dark" }, "Verse of the day"),
+    el("p", { class: "home-verse-ar", dir: "rtl" }, verse.arabic),
+    el("p", { class: "home-verse-tr" }, verse.hinglish),
+    el("div", { class: "home-verse-foot" }, [
+      el("span", { class: "home-verse-ref" }, verse.ref),
+      dailyFavBtn,
     ]),
   ]);
-  app.appendChild(hero);
 
-  const ticker = el("div", { class: "hadith-ticker", "aria-label": "Rotating hadith highlights" });
-  app.appendChild(ticker);
-  startHadithTicker(ticker);
+  main.appendChild(el("div", { class: "home-top" }, [resume, daily]));
 
-  const main = el("main", { class: "container" });
-  app.appendChild(main);
-  renderLoading(main);
+  /* Row 2 — quick tiles */
+  const tiles = [
+    { href: `${BASE_PATH}/quran-text/1`, label: "Read Qur'an", sub: "Juz by juz ya surah — apni marzi se", tint: "is-emerald" },
+    { href: `${BASE_PATH}/hadith`, label: "Hadith", sub: "Bukhari, Muslim aur more", tint: "is-gold" },
+    { href: `${BASE_PATH}/duas`, label: "Dua & Azkar", sub: "Roz ke duas, tasbeeh counter", tint: "is-sage" },
+    { href: `${BASE_PATH}/prayer-times`, label: "Prayer times", sub: "Finding your location\u2026", tint: "is-clay", subId: "qawPrayerTileSub" },
+  ];
+  main.appendChild(
+    el(
+      "div",
+      { class: "home-tiles" },
+      tiles.map((t) =>
+        el("a", { class: `home-tile ${t.tint}`, href: t.href }, [
+          el("span", { class: "home-tile-mark", "aria-hidden": "true" }),
+          el("span", { class: "home-tile-label" }, t.label),
+          el("span", Object.assign({ class: "home-tile-sub" }, t.subId ? { id: t.subId } : {}), t.sub),
+        ])
+      )
+    )
+  );
+  if (typeof qawApplyPrayerLabelsIfCached === "function") qawApplyPrayerLabelsIfCached();
 
-  try {
-    const items = await githubList("");
-    const RESERVED_FOLDERS = ["duas", "search-index", "quran-data", "hadith-data"]; // reserved for JSON data, not PDF folders
-    const folders = items.filter((i) => i.type === "dir" && !RESERVED_FOLDERS.includes(i.name)).sort(naturalSort);
-    main.innerHTML = "";
+  /* Row 3 — Hadith collections in Hinglish */
+  main.appendChild(
+    el("div", { class: "home-section-head" }, [
+      el("h2", { class: "home-section-title" }, "Hadith collections in Hinglish"),
+      el("a", { class: "home-section-link", href: `${BASE_PATH}/hadith` }, "All books"),
+    ])
+  );
 
-    if (folders.length === 0) {
-      main.appendChild(
-        el("p", { class: "state-msg" }, "No PDF books yet \u2014 push a folder of PDFs to your repo and refresh.")
-      );
-    }
-
-    const grid = el("div", { class: "grid" });
-    folders.forEach((folder) => {
-      const progress = getProgress(folder.name);
-      const body = [
-        el("span", { class: "card-kicker" }, "Book"),
-        el("h2", { class: "card-title" }, titleFromSlug(folder.name)),
-      ];
-      if (progress) {
-        body.push(el("p", { class: "card-desc card-continue" }, `Continue \u2014 ${titleFromSlug(progress.file)}, page ${progress.page}`));
-      } else {
-        body.push(el("p", { class: "card-desc" }, "Tap to view parts"));
-      }
-      const card = el(
-        "a",
-        { class: "card", href: progress ? partHref(folder.name, progress.file, progress.page) : `/book/${encodeURIComponent(folder.name)}` },
-        [el("div", { class: "card-spine" }), el("div", { class: "card-body" }, body)]
-      );
-      grid.appendChild(card);
-    });
-
-    // Typed (non-PDF) collections, sourced from JSON in this repo rather
-    // than a folder of files.
-    grid.appendChild(
-      el("a", { class: "card", href: "/duas" }, [
+  const hGrid = el("div", { class: "grid" });
+  HADITH_BOOKS.filter((b) => b.group === "major").forEach((b) => {
+    const statusLabel = b.status === "ready" ? "Hinglish ready" : b.status === "progress" ? "In progress" : "Coming soon";
+    const desc = b.count ? `${b.count.toLocaleString()} hadith \u00b7 ${statusLabel}` : `Hadith \u00b7 ${statusLabel}`;
+    hGrid.appendChild(
+      el("a", { class: "card", href: `${BASE_PATH}/hadith/${b.slug}` }, [
         el("div", { class: "card-spine" }),
         el("div", { class: "card-body" }, [
-          el("span", { class: "card-kicker" }, "Typed text"),
-          el("h2", { class: "card-title" }, "Daily Dua & Dhikr"),
-          el("p", { class: "card-desc" }, "Essential duas for every moment of your day"),
+          el("span", { class: "card-kicker home-hadith-ar", dir: "rtl" }, b.arabic),
+          el("h2", { class: "card-title" }, b.name),
+          el("p", { class: "card-desc" }, desc),
         ]),
       ])
     );
-
-    grid.appendChild(
-      el("a", { class: "card", href: "/hadith" }, [
-        el("div", { class: "card-spine" }),
-        el("div", { class: "card-body" }, [
-          el("span", { class: "card-kicker" }, "Typed text"),
-          el("h2", { class: "card-title" }, "Hadith Collections"),
-          el("p", { class: "card-desc" }, "Sahih al-Bukhari, Sahih Muslim & 8 more \u2014 Arabic & English"),
-        ]),
-      ])
-    );
-
-    main.appendChild(grid);
-  } catch (e) {
-    main.innerHTML = "";
-    renderError(main, e.message);
-  }
+  });
+  main.appendChild(hGrid);
 }
+
+
+// relace end 
 
 async function renderBook(bookSlug) {
   setMeta({
@@ -490,7 +1007,7 @@ async function renderBook(bookSlug) {
   app.innerHTML = "";
   const main = el("main", { class: "container" });
   app.appendChild(main);
-  main.appendChild(el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), ` / ${titleFromSlug(bookSlug)}`]));
+  main.appendChild(el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), ` / ${titleFromSlug(bookSlug)}`]));
   main.appendChild(el("h1", { class: "page-title" }, titleFromSlug(bookSlug)));
 
   const progress = getProgress(bookSlug);
@@ -505,7 +1022,7 @@ async function renderBook(bookSlug) {
 
   if (bookSlug === QURAN_TEXT_BOOK_SLUG) {
     main.appendChild(
-      el("a", { class: "text-mode-banner", href: "/quran-text/1" }, [
+      el("a", { class: "text-mode-banner", href: `${BASE_PATH}/quran-text/1` }, [
         el("span", {}, "\u0627 Read as typed text"),
         el("span", { class: "continue-banner-detail" }, "Arabic \u00b7 transliteration \u00b7 Urdu translation \u2014 no scanned pages"),
       ])
@@ -555,14 +1072,14 @@ async function renderPart(bookSlug, fileName, startPage) {
   const rawUrl = `${RAW_ROOT}/${bookSlug}/${encodeURIComponent(fileName)}`;
 
   const crumb = el("p", { class: "crumb" }, [
-    el("a", { href: "/" }, "Library"),
+    el("a", { href: `${BASE_PATH}/` }, "Library"),
     " / ",
-    el("a", { href: `/book/${encodeURIComponent(bookSlug)}` }, titleFromSlug(bookSlug)),
+    el("a", { href: `${BASE_PATH}/book/${encodeURIComponent(bookSlug)}` }, titleFromSlug(bookSlug)),
     ` / ${titleFromSlug(fileName)}`,
   ]);
 
   const topBar = el("div", { class: "viewer-top" }, [
-    el("a", { href: `/book/${encodeURIComponent(bookSlug)}` }, "\u2190 Back to parts"),
+    el("a", { href: `${BASE_PATH}/book/${encodeURIComponent(bookSlug)}` }, "\u2190 Back to parts"),
     el("span", { class: "viewer-part-label" }, titleFromSlug(fileName)),
     el("span", { class: "viewer-page-counter", id: "pageCounter" }, ""),
   ]);
@@ -811,6 +1328,153 @@ async function fetchJuz(juzNumber) {
   return res.json();
 }
 
+// Gathers every ayah of a surah, fetching juz files sequentially starting
+// from where the surah begins (SURAH_META[s].juz) until every ayah has
+// been found - needed because a surah can span more than one juz file.
+async function fetchSurahAyahs(surahNumber) {
+  const meta = SURAH_META[surahNumber];
+  let ayahs = [];
+  let juz = meta.juz;
+  while (ayahs.length < meta.ayahs && juz <= 30) {
+    const data = await fetchJuz(juz);
+    ayahs = ayahs.concat(data.filter((v) => v.s === surahNumber));
+    juz++;
+  }
+  return ayahs;
+}
+
+/* --- Reading preferences: Arabic size + which lines to show, persisted --- */
+const QAW_QURAN_PREFS_KEY = "qaw:quranPrefs";
+const QAW_QURAN_PREFS_DEFAULT = { arabicSize: 26, translation: true, translit: true, tafsir: false };
+
+function qawGetQuranPrefs() {
+  try {
+    return Object.assign({}, QAW_QURAN_PREFS_DEFAULT, JSON.parse(localStorage.getItem(QAW_QURAN_PREFS_KEY) || "{}"));
+  } catch (e) {
+    return Object.assign({}, QAW_QURAN_PREFS_DEFAULT);
+  }
+}
+
+function qawSaveQuranPrefs(prefs) {
+  try {
+    localStorage.setItem(QAW_QURAN_PREFS_KEY, JSON.stringify(prefs));
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+// Which tab (Juz/Para vs Surah) the side list shows - a page-local UI
+// choice, not persisted, matching how the design behaves.
+let qawQuranListTab = "juz";
+
+function qawQuranSideList(activeJuz, activeSurah) {
+  const tabs = el("div", { class: "qr-tabs" }, [
+    el(
+      "button",
+      { class: `qr-tab${qawQuranListTab === "juz" ? " is-active" : ""}`, type: "button" },
+      "Juz / Para"
+    ),
+    el(
+      "button",
+      { class: `qr-tab${qawQuranListTab === "surah" ? " is-active" : ""}`, type: "button" },
+      "Surah"
+    ),
+  ]);
+
+  const list = el("div", { class: "qr-list" });
+
+  function fillList() {
+    list.innerHTML = "";
+    if (qawQuranListTab === "juz") {
+      for (let j = 1; j <= 30; j++) {
+        list.appendChild(
+          el(
+            "a",
+            { class: `qr-list-item${j === activeJuz ? " is-active" : ""}`, href: `${BASE_PATH}/quran-text/${j}` },
+            [el("span", { class: "qr-list-num" }, String(j)), el("span", { class: "qr-list-label" }, `Juz ${j}`)]
+          )
+        );
+      }
+    } else {
+      for (let s = 1; s <= 114; s++) {
+        const meta = SURAH_META[s];
+        list.appendChild(
+          el(
+            "a",
+            {
+              class: `qr-list-item${s === activeSurah ? " is-active" : ""}`,
+              href: `${BASE_PATH}/quran-text/${meta.juz}/v/${s}/1`,
+            },
+            [
+              el("span", { class: "qr-list-num" }, String(s)),
+              el("span", { class: "qr-list-label" }, SURAH_NAMES[s] || `Surah ${s}`),
+              el("span", { class: "qr-list-ar", dir: "rtl" }, meta.ar),
+            ]
+          )
+        );
+      }
+    }
+  }
+  fillList();
+
+  tabs.querySelectorAll(".qr-tab").forEach((btn, i) => {
+    btn.addEventListener("click", () => {
+      qawQuranListTab = i === 0 ? "juz" : "surah";
+      tabs.querySelectorAll(".qr-tab").forEach((b, j) => b.classList.toggle("is-active", j === i));
+      fillList();
+    });
+  });
+
+  return { tabs, list };
+}
+
+function qawQuranSettingsPanel(prefs, onChange) {
+  const sizeVal = el("span", { class: "qr-size-val" }, String(prefs.arabicSize));
+  const minus = el("button", { class: "qr-size-btn", type: "button", "aria-label": "Decrease Arabic text size" }, "\u2212");
+  const plus = el("button", { class: "qr-size-btn", type: "button", "aria-label": "Increase Arabic text size" }, "+");
+  minus.addEventListener("click", () => {
+    prefs.arabicSize = Math.max(20, prefs.arabicSize - 3);
+    sizeVal.textContent = String(prefs.arabicSize);
+    qawSaveQuranPrefs(prefs);
+    onChange(prefs);
+  });
+  plus.addEventListener("click", () => {
+    prefs.arabicSize = Math.min(48, prefs.arabicSize + 3);
+    sizeVal.textContent = String(prefs.arabicSize);
+    qawSaveQuranPrefs(prefs);
+    onChange(prefs);
+  });
+
+  const toggleRow = (label, key) => {
+    const track = el("span", { class: `qr-switch-track${prefs[key] ? " is-on" : ""}` }, [
+      el("span", { class: "qr-switch-thumb" }),
+    ]);
+    const row = el(
+      "button",
+      { class: "qr-toggle-row", type: "button", role: "switch", "aria-checked": String(!!prefs[key]) },
+      [el("span", { class: "qr-toggle-label" }, label), track]
+    );
+    row.addEventListener("click", () => {
+      prefs[key] = !prefs[key];
+      track.classList.toggle("is-on", prefs[key]);
+      row.setAttribute("aria-checked", String(!!prefs[key]));
+      qawSaveQuranPrefs(prefs);
+      onChange(prefs);
+    });
+    return row;
+  };
+
+  return el("div", { class: "qr-settings" }, [
+    el("span", { class: "qr-settings-kicker" }, "Reading"),
+    el("div", { class: "qr-size-row" }, [el("span", { class: "qr-toggle-label" }, "Arabic size"), minus, sizeVal, plus]),
+    toggleRow("Hinglish translation", "translation"),
+    toggleRow("Transliteration", "translit"),
+    toggleRow("Tafsir notes", "tafsir"),
+  ]);
+}
+
+let qawQuranProgressTimer = null;
+
 async function renderQuranText(juzNumber, scrollTarget) {
   juzNumber = Math.max(1, Math.min(juzNumber, 30));
   setMeta({
@@ -819,35 +1483,95 @@ async function renderQuranText(juzNumber, scrollTarget) {
   });
   app.innerHTML = "";
 
-  const crumb = el("p", { class: "crumb" }, [
-    el("a", { href: "/" }, "Library"),
-    " / ",
-    el("a", { href: `/book/${encodeURIComponent(QURAN_TEXT_BOOK_SLUG)}` }, "Quran Roman Urdu Hindi"),
-    ` / Juz ${juzNumber} (typed text)`,
-  ]);
+  const prefs = qawGetQuranPrefs();
+  const activeSurah = scrollTarget ? scrollTarget.s : null;
 
-  const topBar = el("div", { class: "text-top-bar" }, [
-    el(
-      "a",
-      { class: "text-nav-link", href: juzNumber > 1 ? `/quran-text/${juzNumber - 1}` : "#", "aria-disabled": juzNumber <= 1 },
-      "\u2039 Juz " + (juzNumber - 1)
-    ),
-    el("span", { class: "text-juz-label" }, `Juz ${juzNumber}`),
-    el(
-      "a",
-      { class: "text-nav-link", href: juzNumber < 30 ? `/quran-text/${juzNumber + 1}` : "#", "aria-disabled": juzNumber >= 30 },
-      "Juz " + (juzNumber + 1) + " \u203a"
-    ),
-  ]);
+  const { tabs, list } = qawQuranSideList(juzNumber, activeSurah);
+  const settings = qawQuranSettingsPanel(prefs, applyPrefsToDom);
+  const side = el("aside", { class: "qr-side" }, [tabs, list, settings]);
 
-  const versesWrap = el("div", { class: "verses-wrap" });
+  const header = el("div", { class: "qr-header" });
+  const versesWrap = el("div", { class: "qr-verses" });
   renderLoading(versesWrap);
+  const reader = el("div", { class: "qr-reader" }, [header, versesWrap]);
 
-  const wrap = el("div", { class: "container text-container" }, [crumb, topBar, versesWrap]);
-  app.appendChild(el("main", {}, wrap));
+  const shell = el("div", { class: "qr-shell" }, [side, reader]);
+  app.appendChild(el("main", { class: "container qr-container" }, [shell]));
+
+  function applyPrefsToDom(p) {
+    versesWrap.style.setProperty("--qr-arabic-size", `${p.arabicSize}px`);
+    versesWrap.querySelectorAll(".verse-translit").forEach((elx) => (elx.style.display = p.translit ? "" : "none"));
+    versesWrap.querySelectorAll(".verse-urdu").forEach((elx) => (elx.style.display = p.translation ? "" : "none"));
+  }
+
+  function verseShareText(v, surahName) {
+    return [v.ar, "", v.t, "", v.u, "", `${surahName} ${v.s}:${v.a} \u00b7 QuranAnyWhere`, `${window.location.origin}${BASE_PATH}/quran-text/${juzNumber}/v/${v.s}/${v.a}`].join(
+      "\n"
+    );
+  }
+
+  function buildVerseActions(v, surahName) {
+    const saved = isAyahFavorited(v.s, v.a);
+    const saveBtn = el(
+      "button",
+      { class: `btn btn-ghost qr-action${saved ? " is-active" : ""}`, type: "button" },
+      saved ? "Saved" : "Save"
+    );
+    saveBtn.addEventListener("click", () => {
+      const now = toggleAyahFavorite(v.s, v.a, { juz: juzNumber, ar: v.ar, t: v.t, u: v.u, surahName });
+      saveBtn.textContent = now ? "Saved" : "Save";
+      saveBtn.classList.toggle("is-active", now);
+    });
+
+    const shareBtn = el("button", { class: "btn btn-ghost qr-action", type: "button" }, "Share verse");
+    shareBtn.addEventListener("click", async () => {
+      const text = verseShareText(v, surahName);
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: `${surahName} ${v.s}:${v.a}`, text });
+        } catch (e) {
+          /* user cancelled the native share sheet - no action needed */
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          shareBtn.textContent = "Copied!";
+        } catch (e) {
+          shareBtn.textContent = "Couldn't copy";
+        }
+        setTimeout(() => (shareBtn.textContent = "Share verse"), 1800);
+      }
+    });
+
+    const playBtn = el("button", { class: "btn btn-ghost qr-action", type: "button" }, "Play");
+    playBtn.addEventListener("click", () => {
+      qawPlayAudioUrl(qawAyahAudioUrl(v.s, v.a), playBtn, "Play");
+    });
+
+    return el("div", { class: "qr-verse-actions" }, [saveBtn, shareBtn, playBtn]);
+  }
 
   try {
     const verses = await fetchJuz(juzNumber);
+    const firstSurah = verses.length ? verses[0].s : null;
+    const meta = firstSurah ? SURAH_META[firstSurah] : null;
+
+    header.innerHTML = "";
+    header.appendChild(
+      el("div", {}, [
+        el("span", { class: "qr-header-kicker" }, `JUZ ${juzNumber} \u00b7 SURAH ${firstSurah || "\u2014"}`),
+        el("h1", { class: "qr-header-title" }, (firstSurah && SURAH_NAMES[firstSurah]) || `Juz ${juzNumber}`),
+        el(
+          "p",
+          { class: "qr-header-sub" },
+          meta ? `${meta.ayahs} ayat \u00b7 ${meta.type === "Meccan" ? "Makki" : "Madani"}` : ""
+        ),
+        firstSurah
+          ? el("a", { class: "qr-header-listen", href: `${BASE_PATH}/quran-play/${firstSurah}` }, "\u25b6 Listen to full surah")
+          : null,
+      ].filter(Boolean))
+    );
+    if (meta) header.appendChild(el("span", { class: "qr-header-ar", dir: "rtl" }, meta.ar));
 
     versesWrap.innerHTML = "";
     let currentChapter = null;
@@ -862,6 +1586,7 @@ async function renderQuranText(juzNumber, scrollTarget) {
           ])
         );
       }
+      const surahName = SURAH_NAMES[v.s] || `Surah ${v.s}`;
       const card = el("div", { class: "verse-card", id: `v-${v.s}-${v.a}` }, [
         el("div", { class: "verse-arabic" }, [
           el("span", {}, v.ar),
@@ -869,6 +1594,7 @@ async function renderQuranText(juzNumber, scrollTarget) {
         ]),
         el("p", { class: "verse-translit" }, v.t),
         el("p", { class: "verse-urdu" }, v.u),
+        buildVerseActions(v, surahName),
       ]);
       versesWrap.appendChild(card);
     });
@@ -877,6 +1603,31 @@ async function renderQuranText(juzNumber, scrollTarget) {
       "Arabic text \u00b7 transliteration: tanzil.net. Urdu translation: Abul Ala Maududi, via quranromanurdu.com."
     );
     versesWrap.appendChild(note);
+
+    applyPrefsToDom(prefs);
+
+    // Track roughly how far into this juz the visitor has scrolled, so the
+    // home "Continue reading" panel can resume near the right ayah. Fires
+    // for whichever verse card is nearest the vertical center of the
+    // viewport, debounced so normal scrolling doesn't spam localStorage.
+    const cards = Array.from(versesWrap.querySelectorAll(".verse-card"));
+    if (cards.length && "IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const idx = cards.indexOf(entry.target);
+            if (idx < 0) return;
+            const [, s, a] = entry.target.id.split("-").map(Number);
+            const percent = Math.round(((idx + 1) / cards.length) * 100);
+            clearTimeout(qawQuranProgressTimer);
+            qawQuranProgressTimer = setTimeout(() => setQuranProgress(juzNumber, s, a, percent), 600);
+          });
+        },
+        { rootMargin: "-35% 0px -55% 0px", threshold: 0 }
+      );
+      cards.forEach((c) => observer.observe(c));
+    }
 
     if (scrollTarget) {
       const target = document.getElementById(`v-${scrollTarget.s}-${scrollTarget.a}`);
@@ -894,24 +1645,24 @@ async function renderQuranText(juzNumber, scrollTarget) {
 
 async function renderDuas(scrollTarget) {
   setMeta({
-    title: "Daily Dua & Dhikr",
-    description: "Essential duas and adhkar for every moment of your day — read online, free.",
+    title: "Dua & Azkar",
+    description: "Roz ke duas — Arabic, transliteration aur Hinglish matlab ke saath.",
   });
   app.innerHTML = "";
-  const crumb = el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), " / Daily Dua & Dhikr"]);
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / Dua & Azkar"]);
   const heading = el("div", {}, [
-    el("h1", { class: "page-title" }, "Daily Dua & Dhikr"),
-    el("p", { class: "duas-subtitle" }, "Essential duas and dhikr for every moment of your day"),
+    el("h1", { class: "page-title" }, "Dua & Azkar"),
+    el("p", { class: "duas-subtitle" }, "Roz ke duas \u2014 Arabic, transliteration aur Hinglish matlab ke saath."),
   ]);
 
-  const versesWrap = el("div", { class: "verses-wrap" });
-  renderLoading(versesWrap);
+  const grid = el("div", { class: "duas-grid" });
+  renderLoading(grid);
 
-  const wrap = el("div", { class: "container text-container" }, [crumb, heading, versesWrap]);
+  const wrap = el("div", { class: "container text-container" }, [crumb, heading, grid]);
   app.appendChild(el("main", {}, wrap));
 
   function duaUrl(i) {
-    return `${window.location.origin}/duas/${i}`;
+    return `${window.location.origin}${BASE_PATH}/duas/${i}`;
   }
 
   function duaShareText(d, i) {
@@ -922,20 +1673,10 @@ async function renderDuas(scrollTarget) {
     const res = await fetch(`${RAW_ROOT}/${DUAS_JSON_PATH}`);
     if (!res.ok) throw new Error(`Couldn't load duas.json (${res.status})`);
     const duas = await res.json();
+    const tasbeehCounts = qawGetTasbeehCounts();
 
-    versesWrap.innerHTML = "";
+    grid.innerHTML = "";
     duas.forEach((d, i) => {
-      const copyBtn = el("button", { class: "share-link", type: "button" }, "Copy");
-      copyBtn.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(duaShareText(d, i));
-          copyBtn.textContent = "Copied!";
-        } catch (err) {
-          copyBtn.textContent = "Couldn't copy";
-        }
-        setTimeout(() => (copyBtn.textContent = "Copy"), 1800);
-      });
-
       const socialTargets = [
         { label: "WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(duaShareText(d, i))}` },
         { label: "Telegram", href: `https://t.me/share/url?url=${encodeURIComponent(duaUrl(i))}&text=${encodeURIComponent(d.title)}` },
@@ -949,8 +1690,14 @@ async function renderDuas(scrollTarget) {
       );
       social.style.display = "none";
 
-      const shareBtn = el("button", { class: "share-link", type: "button" }, "Share");
-      shareBtn.addEventListener("click", async () => {
+      const shareIconBtn = el(
+        "button",
+        { class: "dua-share-icon", type: "button", "aria-label": "Share this dua" },
+        svgIcon(
+          '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M14 6.5a2.25 2.25 0 1 0-2.1-3.05L7.4 6.3a2.25 2.25 0 1 0 0 3.9l4.5 2.85a2.25 2.25 0 1 0 .7-1.35L8.1 8.85a2.28 2.28 0 0 0 0-1.2L12.6 4.8c.34.42.83.7 1.4.7Z" fill="currentColor"/></svg>'
+        )
+      );
+      shareIconBtn.addEventListener("click", async () => {
         if (navigator.share) {
           try {
             await navigator.share({ title: d.title, text: duaShareText(d, i), url: duaUrl(i) });
@@ -962,21 +1709,45 @@ async function renderDuas(scrollTarget) {
         }
       });
 
-      const shareRow = el("div", { class: "share-row" }, [shareBtn, el("span", { class: "share-sep" }, "|"), copyBtn]);
+      const saved = isDuaFavorited(i);
+      const saveBtn = el(
+        "button",
+        { class: `btn btn-ghost dua-action${saved ? " is-active" : ""}`, type: "button" },
+        saved ? "Saved" : "Save"
+      );
+      saveBtn.addEventListener("click", () => {
+        const now = toggleDuaFavorite(i, { title: d.title, arabic: d.arabic, transliteration: d.transliteration, translation: d.translation, reference: d.reference });
+        saveBtn.textContent = now ? "Saved" : "Save";
+        saveBtn.classList.toggle("is-active", now);
+      });
+
+      const tasbeehBtn = el(
+        "button",
+        { class: "btn btn-ghost dua-action", type: "button" },
+        `Tasbeeh ${tasbeehCounts[i] || 0}`
+      );
+      tasbeehBtn.addEventListener("click", () => {
+        const count = qawIncrementTasbeeh(i);
+        tasbeehBtn.textContent = `Tasbeeh ${count}`;
+      });
 
       const card = el("div", { class: "dua-card", id: `dua-${i}` }, [
-        el("h3", { class: "dua-title" }, d.title),
+        el("div", { class: "dua-card-head" }, [
+          el("h3", { class: "dua-title" }, d.title),
+          el("span", { class: "dua-timing" }, qawDuaTiming(d.title)),
+          shareIconBtn,
+        ]),
         el("div", { class: "verse-arabic dua-arabic" }, d.arabic),
         el("p", { class: "verse-translit" }, d.transliteration),
         el("p", { class: "verse-urdu dua-translation" }, `\u201c${d.translation}\u201d`),
         el("p", { class: "dua-reference" }, d.reference),
-        shareRow,
+        el("div", { class: "dua-actions" }, [saveBtn, tasbeehBtn]),
         social,
       ]);
       if (d.note) {
         card.appendChild(el("p", { class: "dua-note" }, `\u2139 ${d.note}`));
       }
-      versesWrap.appendChild(card);
+      grid.appendChild(card);
     });
 
     if (scrollTarget !== undefined && scrollTarget !== null) {
@@ -988,8 +1759,8 @@ async function renderDuas(scrollTarget) {
       }
     }
   } catch (e) {
-    versesWrap.innerHTML = "";
-    renderError(versesWrap, e.message);
+    grid.innerHTML = "";
+    renderError(grid, e.message);
   }
 }
 
@@ -1067,7 +1838,7 @@ function stopHadithTicker() {
 }
 
 async function startHadithTicker(container) {
-  const track = el("a", { class: "hadith-ticker-track", href: "/hadith" });
+  const track = el("a", { class: "hadith-ticker-track", href: `${BASE_PATH}/hadith` });
   container.appendChild(track);
 
   const pool = await buildTickerPool();
@@ -1088,7 +1859,7 @@ async function startHadithTicker(container) {
 
     const h = pool[idx % pool.length];
     idx++;
-    track.href = `/hadith/${h.bookSlug}/${h.sectionNum}/h/${h.hadithnumber}`;
+    track.href = `${BASE_PATH}/hadith/${h.bookSlug}/${h.sectionNum}/h/${h.hadithnumber}`;
     track.innerHTML = "";
     track.appendChild(el("span", { class: "hadith-ticker-ref" }, `${h.bookName} ${h.hadithnumber}`));
     track.appendChild(el("span", { class: "hadith-ticker-text" }, h.snippet));
@@ -1133,7 +1904,7 @@ async function renderHadithBooks() {
     description: "Sahih al-Bukhari, Sahih Muslim, and 9 more authentic hadith collections — Arabic text with English translation, free online.",
   });
   app.innerHTML = "";
-  const crumb = el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), " / Hadith Collections"]);
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / Hadith Collections"]);
   const heading = el("div", {}, [
     el("h1", { class: "page-title" }, "Hadith Collections"),
     el("p", { class: "duas-subtitle" }, "The words of the Prophet \uFDFA in Arabic, English & Hinglish"),
@@ -1157,7 +1928,7 @@ async function renderHadithBooks() {
           "div",
           { class: "hadith-group-col" },
           colBooks.map((b) =>
-            el("a", { class: "hadith-row", href: `/hadith/${b.slug}` }, [
+            el("a", { class: "hadith-row", href: `${BASE_PATH}/hadith/${b.slug}` }, [
               el("span", { class: "hadith-row-en" }, b.name),
               el("span", { class: "hadith-row-ar" }, b.arabic || ""),
             ])
@@ -1190,9 +1961,9 @@ async function renderHadithChapters(bookSlug) {
   });
   app.innerHTML = "";
   const crumb = el("p", { class: "crumb" }, [
-    el("a", { href: "/" }, "Library"),
+    el("a", { href: `${BASE_PATH}/` }, "Library"),
     " / ",
-    el("a", { href: "/hadith" }, "Hadith Collections"),
+    el("a", { href: `${BASE_PATH}/hadith` }, "Hadith Collections"),
     ` / ${book ? book.name : bookSlug}`,
   ]);
   const heading = el("h1", { class: "page-title" }, book ? book.name : bookSlug);
@@ -1203,7 +1974,7 @@ async function renderHadithChapters(bookSlug) {
         book.shortDesc + " ",
         el(
           "a",
-          { href: `/hadith-about/${bookSlug}`, target: "_blank", rel: "noopener" },
+          { href: `${BASE_PATH}/hadith-about/${bookSlug}`, target: "_blank", rel: "noopener" },
           "More information \u2026"
         ),
       ])
@@ -1215,7 +1986,7 @@ async function renderHadithChapters(bookSlug) {
         el("p", { class: "hadith-collection-extra-link" }, [
           el(
             "a",
-            { href: `/hadith-about/${bookSlug}/${link.aboutSlug}`, target: "_blank", rel: "noopener" },
+            { href: `${BASE_PATH}/hadith-about/${bookSlug}/${link.aboutSlug}`, target: "_blank", rel: "noopener" },
             link.label
           ),
         ])
@@ -1237,10 +2008,10 @@ async function renderHadithChapters(bookSlug) {
       .sort((a, b) => a - b)
       .forEach((n) => {
         grid.appendChild(
-          el("a", { class: "card", href: `/hadith/${bookSlug}/${n}` }, [
+          el("a", { class: "card", href: `${BASE_PATH}/hadith/${bookSlug}/${n}` }, [
             el("div", { class: "card-spine" }),
             el("div", { class: "card-body" }, [
-              el("span", { class: "card-kicker" },  n === 0 ? "Introduction" : `Book ${n}`),
+              el("span", { class: "card-kicker" }, n === 0 ? "Introduction" : `Book ${n}`),
               el("h2", { class: "card-title hadith-chapter-title" }, sections[n]),
             ]),
           ])
@@ -1262,13 +2033,13 @@ async function renderHadithAbout(bookSlug, aboutSlug) {
   app.innerHTML = "";
   const fileSlug = aboutSlug || bookSlug;
   const crumb = el("p", { class: "crumb" }, [
-    el("a", { href: "/" }, "Library"),
+    el("a", { href: `${BASE_PATH}/` }, "Library"),
     " / ",
-    el("a", { href: "/hadith" }, "Hadith Collections"),
+    el("a", { href: `${BASE_PATH}/hadith` }, "Hadith Collections"),
     " / ",
-    el("a", { href: `/hadith/${bookSlug}` }, book ? book.name : bookSlug),
+    el("a", { href: `${BASE_PATH}/hadith/${bookSlug}` }, book ? book.name : bookSlug),
     ...(aboutSlug
-      ? [" / ", el("a", { href: `/hadith-about/${bookSlug}` }, "About"), " / Letter"]
+      ? [" / ", el("a", { href: `${BASE_PATH}/hadith-about/${bookSlug}` }, "About"), " / Letter"]
       : [" / About"]),
   ]);
   const bodyWrap = el("div");
@@ -1313,7 +2084,7 @@ function buildHadithCard(h, ctx) {
   const { bookSlug, bookName, sectionNum, chapterName } = ctx;
 
   function hadithUrl() {
-    return `${window.location.origin}/hadith/${bookSlug}/${sectionNum}/h/${h.hadithnumber}`;
+    return `${window.location.origin}${BASE_PATH}/hadith/${bookSlug}/${sectionNum}/h/${h.hadithnumber}`;
   }
 
   function hadithShareText() {
@@ -1431,11 +2202,11 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
   });
   app.innerHTML = "";
   const crumb = el("p", { class: "crumb" }, [
-    el("a", { href: "/" }, "Library"),
+    el("a", { href: `${BASE_PATH}/` }, "Library"),
     " / ",
-    el("a", { href: "/hadith" }, "Hadith Collections"),
+    el("a", { href: `${BASE_PATH}/hadith` }, "Hadith Collections"),
     " / ",
-    el("a", { href: `/hadith/${bookSlug}` }, book ? book.name : bookSlug),
+    el("a", { href: `${BASE_PATH}/hadith/${bookSlug}` }, book ? book.name : bookSlug),
     ` / Book ${sectionNum}`,
   ]);
   const headingWrap = el("div", {}, [el("h1", { class: "page-title" }, `Loading\u2026`)]);
@@ -1483,11 +2254,11 @@ async function renderHadithList(bookSlug, sectionNum, scrollTarget) {
 // always current rather than a stale snapshot.
 async function renderFavorites() {
   setMeta({
-    full: `Your Favorite Hadith | ${cfg.siteTitle}`,
-    description: "Hadith you've favorited on QuranAnyWhere, saved right in this browser.",
+    full: `Your Favorites | ${cfg.siteTitle}`,
+    description: "Hadith and Qur'an verses you've favorited on QuranAnyWhere, saved right in this browser.",
   });
   app.innerHTML = "";
-  const crumb = el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), " / \u2661 Favorites"]);
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / \u2661 Favorites"]);
   const listWrap = el("div");
   const wrap = el("div", { class: "container text-container" }, [
     crumb,
@@ -1501,12 +2272,8 @@ async function renderFavorites() {
     listWrap.appendChild(
       el("div", { class: "empty-favorites" }, [
         el("p", { class: "state-msg" }, "No favorites yet."),
-        el("p", { class: "state-msg" }, [
-          "Tap the ",
-          el("span", { class: "empty-favorites-heart" }, "\u2661"),
-          " on any hadith to save it here.",
-        ]),
-        el("a", { class: "btn btn-primary", href: "/hadith" }, "Browse Hadith Collections"),
+        el("p", { class: "state-msg" }, "Tap Save on any hadith or ayah to keep it here."),
+        el("a", { class: "btn btn-primary", href: `${BASE_PATH}/hadith` }, "Browse Hadith Collections"),
       ])
     );
     return;
@@ -1514,24 +2281,152 @@ async function renderFavorites() {
 
   renderLoading(listWrap);
 
+  function buildAyahFavoriteCard(f, v) {
+    const surahName = f.surahName || SURAH_NAMES[f.s] || `Surah ${f.s}`;
+    const saveBtn = el("button", { class: "btn btn-ghost qr-action is-active", type: "button" }, "Saved");
+    saveBtn.addEventListener("click", () => {
+      toggleAyahFavorite(f.s, f.a, {});
+      card.remove();
+      if (listWrap.children.length === 0) renderFavorites();
+    });
+    const shareBtn = el("button", { class: "btn btn-ghost qr-action", type: "button" }, "Share verse");
+    shareBtn.addEventListener("click", async () => {
+      const text = [v.ar, v.t, v.u, `${surahName} ${f.s}:${f.a}`].filter(Boolean).join("\n");
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: `${surahName} ${f.s}:${f.a}`, text });
+        } catch (e) {
+          /* cancelled */
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          shareBtn.textContent = "Copied!";
+        } catch (e) {
+          shareBtn.textContent = "Couldn't copy";
+        }
+        setTimeout(() => (shareBtn.textContent = "Share verse"), 1800);
+      }
+    });
+    const openLink = el(
+      "a",
+      { class: "btn btn-ghost qr-action", href: `${BASE_PATH}/quran-text/${f.juz || 1}/v/${f.s}/${f.a}` },
+      "Read in context"
+    );
+
+    const card = el("div", { class: "verse-card" }, [
+      el("div", { class: "verse-arabic" }, [el("span", {}, v.ar), el("span", { class: "verse-num-badge" }, String(f.a))]),
+      v.t ? el("p", { class: "verse-translit" }, v.t) : null,
+      v.u ? el("p", { class: "verse-urdu" }, v.u) : null,
+      el("p", { class: "dua-reference" }, `${surahName} ${f.s}:${f.a}`),
+      el("div", { class: "qr-verse-actions" }, [saveBtn, shareBtn, openLink]),
+    ].filter(Boolean));
+    return card;
+  }
+
+  function buildDuaFavoriteCard(f, d, i) {
+    const saveBtn = el("button", { class: "btn btn-ghost dua-action is-active", type: "button" }, "Saved");
+    saveBtn.addEventListener("click", () => {
+      toggleDuaFavorite(i, {});
+      card.remove();
+      if (listWrap.children.length === 0) renderFavorites();
+    });
+    const shareBtn = el("button", { class: "btn btn-ghost dua-action", type: "button" }, "Share");
+    shareBtn.addEventListener("click", async () => {
+      const text = [d.title, d.arabic, d.transliteration, d.translation, d.reference].filter(Boolean).join("\n");
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: d.title, text });
+        } catch (e) {
+          /* cancelled */
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text);
+          shareBtn.textContent = "Copied!";
+        } catch (e) {
+          shareBtn.textContent = "Couldn't copy";
+        }
+        setTimeout(() => (shareBtn.textContent = "Share"), 1800);
+      }
+    });
+
+    const card = el("div", { class: "dua-card" }, [
+      el("h3", { class: "dua-title" }, d.title),
+      el("div", { class: "verse-arabic dua-arabic" }, d.arabic),
+      d.transliteration ? el("p", { class: "verse-translit" }, d.transliteration) : null,
+      d.translation ? el("p", { class: "verse-urdu dua-translation" }, `\u201c${d.translation}\u201d`) : null,
+      d.reference ? el("p", { class: "dua-reference" }, d.reference) : null,
+      el("div", { class: "dua-actions" }, [saveBtn, shareBtn]),
+    ].filter(Boolean));
+    return card;
+  }
+
   try {
-    const uniqueSlugs = [...new Set(favorites.map((f) => f.bookSlug))];
-    const loaded = {};
+    const hadithFavs = favorites.filter((f) => f.kind !== "ayah" && f.kind !== "dua");
+    const ayahFavs = favorites.filter((f) => f.kind === "ayah");
+    const duaFavs = favorites.filter((f) => f.kind === "dua");
+
+    const uniqueSlugs = [...new Set(hadithFavs.map((f) => f.bookSlug))];
+    const loadedBooks = {};
     await Promise.all(
       uniqueSlugs.map(async (slug) => {
         try {
-          loaded[slug] = await loadHadithBook(slug);
+          loadedBooks[slug] = await loadHadithBook(slug);
         } catch (e) {
-          loaded[slug] = null; // that collection's data failed to load - skip its favorites below
+          loadedBooks[slug] = null; // that collection's data failed to load - skip its favorites below
         }
       })
     );
+
+    const uniqueJuz = [...new Set(ayahFavs.map((f) => f.juz).filter(Boolean))];
+    const loadedJuz = {};
+    await Promise.all(
+      uniqueJuz.map(async (j) => {
+        try {
+          loadedJuz[j] = await fetchJuz(j);
+        } catch (e) {
+          loadedJuz[j] = null;
+        }
+      })
+    );
+
+    let allDuas = null;
+    if (duaFavs.length) {
+      try {
+        const res = await fetch(`${RAW_ROOT}/${DUAS_JSON_PATH}`);
+        allDuas = res.ok ? await res.json() : null;
+      } catch (e) {
+        allDuas = null;
+      }
+    }
 
     listWrap.innerHTML = "";
     let shown = 0;
 
     favorites.forEach((f) => {
-      const bookData = loaded[f.bookSlug];
+      if (f.kind === "ayah") {
+        const juzData = f.juz ? loadedJuz[f.juz] : null;
+        const rec = juzData ? juzData.find((x) => x.s === f.s && x.a === f.a) : null;
+        // Fall back to the text captured at save time if the juz fetch failed
+        // or the ayah's juz wasn't recorded (e.g. an older saved entry).
+        const v = rec || (f.ar ? { ar: f.ar, t: f.t, u: f.u } : null);
+        if (!v) return;
+        listWrap.appendChild(buildAyahFavoriteCard(f, v));
+        shown++;
+        return;
+      }
+
+      if (f.kind === "dua") {
+        const live = allDuas && allDuas[f.i] ? allDuas[f.i] : null;
+        const d = live || (f.title ? { title: f.title, arabic: f.arabic, transliteration: f.transliteration, translation: f.translation, reference: f.reference } : null);
+        if (!d) return;
+        listWrap.appendChild(buildDuaFavoriteCard(f, d, f.i));
+        shown++;
+        return;
+      }
+
+      const bookData = loadedBooks[f.bookSlug];
       const h = bookData && bookData.hadithsByBook[f.sectionNum]
         ? bookData.hadithsByBook[f.sectionNum].find((x) => x.hadithnumber === f.hadithnumber)
         : null;
@@ -1592,7 +2487,7 @@ async function renderSearch(query) {
     description: "Search the Qur'an and Hadith collections on QuranAnyWhere.",
   });
   app.innerHTML = "";
-  const crumb = el("p", { class: "crumb" }, [el("a", { href: "/" }, "Library"), " / Search"]);
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / Search"]);
 
   const form = el("form", { class: "search-form", id: "searchForm" }, [
     el("input", { class: "search-input", id: "searchInput", type: "search", value: query || "", placeholder: "Search the Qur'an and Hadith, or type a hadith number\u2026", autofocus: "true" }),
@@ -1606,7 +2501,7 @@ async function renderSearch(query) {
   document.getElementById("searchForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const q = document.getElementById("searchInput").value.trim();
-    if (q) navigate(`/search/${encodeURIComponent(q)}`);
+    if (q) navigate(`${BASE_PATH}/search/${encodeURIComponent(q)}`);
   });
 
   if (!query) {
@@ -1652,7 +2547,7 @@ async function renderSearch(query) {
         const matchedUrdu = wordRegex.test(v.u);
         const snippet = snippetAround(matchedUrdu ? v.u : v.t, query, 60);
         resultsWrap.appendChild(
-          el("a", { class: "search-result", href: `/quran-text/${v.j}/v/${v.s}/${v.a}` }, [
+          el("a", { class: "search-result", href: `${BASE_PATH}/quran-text/${v.j}/v/${v.s}/${v.a}` }, [
             el("span", { class: "search-result-ref" }, `${SURAH_NAMES[v.s] || "Surah " + v.s} ${v.s}:${v.a} \u00b7 Juz ${v.j}`),
             el("p", { class: "search-result-snippet" }, snippet),
           ])
@@ -1667,7 +2562,7 @@ async function renderSearch(query) {
         const snippetSource = matchedHi ? h.hi : h.e;
         const snippet = isNumericQuery ? snippetAround(h.e, "", 90) : snippetAround(snippetSource, query, 70);
         resultsWrap.appendChild(
-          el("a", { class: "search-result", href: `/hadith/${h.bk}/${h.sc}/h/${h.n}` }, [
+          el("a", { class: "search-result", href: `${BASE_PATH}/hadith/${h.bk}/${h.sc}/h/${h.n}` }, [
             el(
               "span",
               { class: "search-result-ref" },
@@ -1693,11 +2588,25 @@ async function renderSearch(query) {
 
 function route() {
   stopHadithTicker();
-  const path = window.location.pathname.replace(/^\/+/, "");
+  let path = window.location.pathname;
+  if (path.startsWith(BASE_PATH)) path = path.slice(BASE_PATH.length);
+  path = path.replace(/^\/+/, "");
   const parts = path.split("/").filter(Boolean);
+
+  if (typeof qawStopAudio === "function") qawStopAudio();
+  if (typeof qawSetActiveNav === "function") qawSetActiveNav(qawNavKeyFromParts(parts));
+  if (typeof qawRefreshSidebarChrome === "function") qawRefreshSidebarChrome();
+  const qawTopSearchInput = document.getElementById("qawTopSearchInput");
+  if (qawTopSearchInput) qawTopSearchInput.value = parts[0] === "search" && parts[1] ? decodeURIComponent(parts[1]) : "";
 
   if (parts[0] === "search") {
     renderSearch(parts[1] ? decodeURIComponent(parts[1]) : "");
+  } else if (parts[0] === "prayer-times") {
+    renderPrayerTimes();
+  } else if (parts[0] === "islamic-calendar") {
+    renderIslamicCalendar();
+  } else if (parts[0] === "quran-play") {
+    renderQuranPlayer(parts[1] ? parseInt(parts[1], 10) || 1 : 1);
   } else if (parts[0] === "favorites") {
     renderFavorites();
   } else if (parts[0] === "hadith-about" && parts[1] && parts[2]) {
@@ -1756,4 +2665,727 @@ window.addEventListener("popstate", route);
 window.addEventListener("DOMContentLoaded", () => {
   updateFavoritesBadge();
   route();
+});
+
+/* =============================================================================
+   QuranAW — app shell chrome (v3): sidebar active state, streak display,
+   nav counts, reading-theme toggle (Paper/Sepia/Night), topbar search.
+   Uses only existing helpers: BASE_PATH, HADITH_BOOKS, getFavorites,
+   qawStreakInfo, qawTouchStreak, navigate. Safe no-ops if an element is
+   missing (so this never breaks a page that doesn't have the shell).
+   ========================================================================== */
+
+/* --- Sidebar active nav ------------------------------------------------- */
+function qawSetActiveNav(navKey) {
+  document.querySelectorAll(".qaw-nav-item").forEach((a) => {
+    a.classList.toggle("is-active", a.getAttribute("data-nav") === navKey);
+  });
+}
+
+function qawNavKeyFromParts(parts) {
+  const p0 = parts[0];
+  if (!p0) return "home";
+  if (p0 === "quran-text") return "quran";
+  if (p0 === "book" && parts[1] === QURAN_TEXT_BOOK_SLUG) return "quran";
+  if (p0 === "quran-play") return "listen";
+  if (p0 === "hadith" || p0 === "hadith-about") return "hadith";
+  if (p0 === "search") return "search";
+  if (p0 === "duas") return "duas";
+  if (p0 === "favorites") return "favorites";
+  return "";
+}
+
+/* --- Sidebar streak + counts, refreshed on every route change ----------- */
+function qawRefreshSidebarChrome() {
+  qawTouchStreak();
+  const { streak, week } = qawStreakInfo();
+
+  const numEl = document.getElementById("qawSidebarStreakNum");
+  if (numEl) numEl.textContent = String(streak);
+
+  const weekEl = document.getElementById("qawSidebarStreakWeek");
+  if (weekEl) {
+    weekEl.innerHTML = "";
+    week.forEach((on) => {
+      const dot = document.createElement("span");
+      dot.className = on ? "qaw-streak-dot is-on" : "qaw-streak-dot";
+      weekEl.appendChild(dot);
+    });
+  }
+
+  const hadithCountEl = document.getElementById("qawNavHadithCount");
+  if (hadithCountEl) hadithCountEl.textContent = `${HADITH_BOOKS.length} books`;
+
+  updateFavoritesBadge();
+}
+
+/* --- Reading theme: Paper (default) / Sepia / Night ---------------------- */
+const QAW_THEME_KEY = "qaw:theme";
+
+function qawApplyTheme(name) {
+  if (name && name !== "paper") {
+    document.documentElement.setAttribute("data-theme", name);
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  document.querySelectorAll(".qaw-theme-btn").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.getAttribute("data-theme-choice") === (name || "paper"));
+  });
+  try {
+    localStorage.setItem(QAW_THEME_KEY, name || "paper");
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+function qawInitThemeToggle() {
+  let saved = "paper";
+  try {
+    saved = localStorage.getItem(QAW_THEME_KEY) || "paper";
+  } catch (e) {
+    /* storage unavailable */
+  }
+  qawApplyTheme(saved);
+
+  document.querySelectorAll(".qaw-theme-btn").forEach((btn) => {
+    btn.addEventListener("click", () => qawApplyTheme(btn.getAttribute("data-theme-choice")));
+  });
+}
+
+/* --- Topbar search: submits into the existing /search/<query> route ----- */
+function qawInitTopSearch() {
+  const form = document.getElementById("qawTopSearch");
+  const input = document.getElementById("qawTopSearchInput");
+  if (!form || !input) return;
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (q) navigate(`${BASE_PATH}/search/${encodeURIComponent(q)}`);
+  });
+}
+
+/* --- Mobile sidebar toggle ------------------------------------------------ */
+function qawInitSidebarToggle() {
+  const btn = document.getElementById("qawMenuBtn");
+  const sidebar = document.getElementById("qawSidebar");
+  const backdrop = document.getElementById("qawSidebarBackdrop");
+  if (!btn || !sidebar || !backdrop) return;
+
+  const close = () => {
+    sidebar.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    btn.setAttribute("aria-expanded", "false");
+  };
+  const open = () => {
+    sidebar.classList.add("is-open");
+    backdrop.classList.add("is-open");
+    btn.setAttribute("aria-expanded", "true");
+  };
+
+  btn.addEventListener("click", () => {
+    sidebar.classList.contains("is-open") ? close() : open();
+  });
+  backdrop.addEventListener("click", close);
+  sidebar.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
+}
+
+/* =============================================================================
+   QuranAW — prayer times (v1): location-based namaz timings + Qibla direction.
+   Uses the Aladhan API (aladhan.com — free, no key, CORS-open). Calculation
+   method 1 = University of Islamic Sciences, Karachi, the common default
+   across India/Pakistan. Falls back from GPS -> IP geolocation -> a plain
+   "unavailable" message; caches one day's timings in localStorage so a
+   repeat visit the same day doesn't re-fetch or re-prompt for location.
+   ========================================================================== */
+
+const QAW_PRAYER_CACHE_KEY = "qaw:prayerCache"; // { date, lat, lon, timings }
+const QAW_PRAYER_METHOD = 1;
+const QAW_KAABA_LAT = 21.4225;
+const QAW_KAABA_LON = 39.8262;
+const QAW_PRAYER_ORDER = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+let qawPrayerState = null; // { timings, lat, lon } for the current session, once loaded
+
+function qawTodayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Great-circle bearing from (lat, lon) to the Kaaba, 0-360 degrees from north.
+function qawQiblaBearing(lat, lon) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const toDeg = (r) => (r * 180) / Math.PI;
+  const phi1 = toRad(lat);
+  const phi2 = toRad(QAW_KAABA_LAT);
+  const dLon = toRad(QAW_KAABA_LON - lon);
+  const y = Math.sin(dLon) * Math.cos(phi2);
+  const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+  return Math.round((toDeg(Math.atan2(y, x)) + 360) % 360);
+}
+
+function qawFormatTime12(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const period = h >= 12 ? "pm" : "am";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+function qawFormatCountdown(diffMin) {
+  if (diffMin < 60) return `${diffMin} min`;
+  const h = Math.floor(diffMin / 60);
+  const m = diffMin % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+// Finds the next of the 5 daily prayers relative to the current local time.
+// Rolls over to tomorrow's Fajr if we're already past tonight's Isha.
+function qawNextPrayer(timings) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  for (const name of QAW_PRAYER_ORDER) {
+    const [h, m] = timings[name].split(":").map(Number);
+    const mins = h * 60 + m;
+    if (mins > nowMin) return { name, time: timings[name], diffMin: mins - nowMin };
+  }
+  const [h, m] = timings.Fajr.split(":").map(Number);
+  return { name: "Fajr", time: timings.Fajr, diffMin: 24 * 60 - nowMin + (h * 60 + m) };
+}
+
+async function qawFetchTimings(lat, lon) {
+  const url = `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lon}&method=${QAW_PRAYER_METHOD}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Prayer API error (${res.status})`);
+  const json = await res.json();
+  return json.data.timings;
+}
+
+function qawGetCachedTimings(lat, lon) {
+  try {
+    const raw = localStorage.getItem(QAW_PRAYER_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw);
+    if (cache.date !== qawTodayStr()) return null;
+    // ~0.5deg tolerance (~55km) - avoid refetching for tiny GPS drift.
+    if (Math.abs(cache.lat - lat) > 0.5 || Math.abs(cache.lon - lon) > 0.5) return null;
+    return cache.timings;
+  } catch (e) {
+    return null;
+  }
+}
+
+function qawSetCachedTimings(lat, lon, timings) {
+  try {
+    localStorage.setItem(QAW_PRAYER_CACHE_KEY, JSON.stringify({ date: qawTodayStr(), lat, lon, timings }));
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+function qawSetPrayerLabel(text) {
+  const labelEl = document.getElementById("qawPrayerLabel");
+  if (labelEl) labelEl.textContent = text;
+}
+
+function qawSetPrayerTileSub(text) {
+  const subEl = document.getElementById("qawPrayerTileSub");
+  if (subEl) subEl.textContent = text;
+}
+
+// If a page render (e.g. navigating back Home) rebuilds the prayer tile
+// after we already resolved timings this session, fill it in immediately
+// instead of showing "Finding your location..." again.
+function qawApplyPrayerLabelsIfCached() {
+  if (!qawPrayerState) return;
+  const next = qawNextPrayer(qawPrayerState.timings);
+  const qibla = qawQiblaBearing(qawPrayerState.lat, qawPrayerState.lon);
+  qawSetPrayerTileSub(`${next.name} ${qawFormatTime12(next.time)} \u00b7 Qibla ${qibla}\u00b0`);
+}
+
+function qawRenderPrayerUI(timings, lat, lon) {
+  qawPrayerState = { timings, lat, lon };
+  const next = qawNextPrayer(timings);
+  qawSetPrayerLabel(`${next.name} ${qawFormatTime12(next.time)} \u00b7 ${qawFormatCountdown(next.diffMin)}`);
+  qawApplyPrayerLabelsIfCached();
+}
+
+async function qawLoadPrayerTimes(lat, lon) {
+  let timings = qawGetCachedTimings(lat, lon);
+  if (!timings) {
+    timings = await qawFetchTimings(lat, lon);
+    qawSetCachedTimings(lat, lon, timings);
+  }
+  qawRenderPrayerUI(timings, lat, lon);
+}
+
+// Resolves the visitor's coordinates: GPS first, falling back to IP-based
+// geolocation. Rejects only if both fail - callers decide how to degrade.
+function qawResolveLocation() {
+  return new Promise((resolve, reject) => {
+    const ipFallback = () => {
+      fetch("https://ipapi.co/json/")
+        .then((res) => {
+          if (!res.ok) throw new Error("IP lookup failed");
+          return res.json();
+        })
+        .then((json) => {
+          if (!json.latitude || !json.longitude) throw new Error("No coordinates from IP lookup");
+          resolve({ lat: json.latitude, lon: json.longitude, city: json.city, region: json.region, country: json.country_name, source: "ip" });
+        })
+        .catch(reject);
+    };
+
+    if (!navigator.geolocation) {
+      ipFallback();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, source: "gps" }),
+      ipFallback,
+      { timeout: 8000, maximumAge: 3600000 }
+    );
+  });
+}
+
+async function qawLoadPrayerTimesForChip() {
+  try {
+    const loc = await qawResolveLocation();
+    await qawLoadPrayerTimes(loc.lat, loc.lon);
+  } catch (e) {
+    qawSetPrayerLabel("Prayer times unavailable");
+    qawSetPrayerTileSub("Enable location to see namaz times");
+  }
+}
+
+function qawInitPrayerTimes() {
+  if (!document.getElementById("qawPrayerLabel")) return; // shell not present on this page
+  qawSetPrayerLabel("Finding your location\u2026");
+  qawLoadPrayerTimesForChip();
+}
+
+/* --- Full Prayer Times page ------------------------------------------------ */
+const QAW_PRAYER_DISPLAY_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+async function qawReverseGeocode(lat, lon) {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+  if (!res.ok) throw new Error("Reverse geocoding failed");
+  const json = await res.json();
+  const a = json.address || {};
+  const place = a.city || a.town || a.village || a.county || a.state_district;
+  const region = a.state || a.country;
+  return [place, region].filter(Boolean).join(", ") || json.display_name || null;
+}
+
+async function renderPrayerTimes() {
+  setMeta({
+    title: "Prayer Times",
+    description: "Namaz timings and Qibla direction for your current location.",
+  });
+  app.innerHTML = "";
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / Prayer Times"]);
+
+  const locationLine = el("p", { class: "pt-location" }, "Finding your location\u2026");
+  const card = el("div", { class: "pt-card" });
+  renderLoading(card);
+
+  const wrap = el("div", { class: "container text-container" }, [
+    crumb,
+    el("h1", { class: "page-title" }, "Prayer Times"),
+    locationLine,
+    card,
+  ]);
+  app.appendChild(el("main", {}, wrap));
+
+  try {
+    const loc = await qawResolveLocation();
+    const timings = qawGetCachedTimings(loc.lat, loc.lon) || (await qawFetchTimings(loc.lat, loc.lon));
+    qawSetCachedTimings(loc.lat, loc.lon, timings);
+    qawRenderPrayerUI(timings, loc.lat, loc.lon); // keeps the topbar chip / home tile in sync too
+
+    let placeName = [loc.city, loc.region].filter(Boolean).join(", ");
+    if (!placeName) {
+      try {
+        placeName = await qawReverseGeocode(loc.lat, loc.lon);
+      } catch (e) {
+        placeName = null;
+      }
+    }
+    locationLine.textContent = placeName
+      ? `${placeName} \u00b7 ${loc.lat.toFixed(2)}\u00b0, ${loc.lon.toFixed(2)}\u00b0`
+      : `${loc.lat.toFixed(2)}\u00b0, ${loc.lon.toFixed(2)}\u00b0`;
+
+    const next = qawNextPrayer(timings);
+    const qibla = qawQiblaBearing(loc.lat, loc.lon);
+
+    card.innerHTML = "";
+    card.appendChild(
+      el("div", { class: "pt-next" }, [
+        el("span", { class: "pt-next-kicker" }, "Next prayer"),
+        el("span", { class: "pt-next-name" }, next.name),
+        el("span", { class: "pt-next-time" }, `${qawFormatTime12(next.time)} \u00b7 in ${qawFormatCountdown(next.diffMin)}`),
+      ])
+    );
+
+    const list = el("div", { class: "pt-list" });
+    QAW_PRAYER_DISPLAY_ORDER.forEach((name) => {
+      if (!timings[name]) return;
+      const isNext = name === next.name;
+      list.appendChild(
+        el("div", { class: `pt-row${isNext ? " is-next" : ""}` }, [
+          el("span", { class: "pt-row-name" }, name),
+          el("span", { class: "pt-row-time" }, qawFormatTime12(timings[name])),
+        ])
+      );
+    });
+    card.appendChild(list);
+
+    card.appendChild(
+      el("div", { class: "pt-qibla" }, [
+        el("span", { class: "pt-qibla-label" }, "Qibla direction"),
+        el("span", { class: "pt-qibla-deg" }, `${qibla}\u00b0`),
+        el("span", { class: "pt-qibla-sub" }, "from true North"),
+      ])
+    );
+
+    card.appendChild(
+      el(
+        "p",
+        { class: "pt-note" },
+        "Calculation method: University of Islamic Sciences, Karachi. Times are approximate \u2014 please confirm with your local masjid for congregational (jama'at) timings."
+      )
+    );
+  } catch (e) {
+    locationLine.textContent = "Couldn't determine your location.";
+    card.innerHTML = "";
+    renderError(card, "Enable location access in your browser and reload this page to see prayer times.");
+  }
+}
+
+/* --- Islamic (Hijri) calendar --------------------------------------------
+   Converts today's date (in the visitor's own local timezone, so the day
+   boundary matches where they actually are) to the Hijri calendar via the
+   Aladhan API's gToH endpoint - free, no key, CORS-open. This is a
+   calendar conversion (Umm al-Qura based), not a moon-sighting service, so
+   it may occasionally differ by a day from local moon-sighting announcements
+   in your region - worth confirming with your local masjid around Ramadan
+   and Eid. */
+async function qawFetchHijriDate(date) {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const res = await fetch(`https://api.aladhan.com/v1/gToH?date=${dd}-${mm}-${yyyy}`);
+  if (!res.ok) throw new Error(`Calendar API error (${res.status})`);
+  const json = await res.json();
+  return json.data;
+}
+
+async function renderIslamicCalendar() {
+  setMeta({
+    title: "Islamic Calendar",
+    description: "Today's Hijri (Islamic) calendar date, converted for your local day.",
+  });
+  app.innerHTML = "";
+  const crumb = el("p", { class: "crumb" }, [el("a", { href: `${BASE_PATH}/` }, "Library"), " / Islamic Calendar"]);
+
+  const card = el("div", { class: "pt-card ic-card" });
+  renderLoading(card);
+
+  const wrap = el("div", { class: "container text-container" }, [
+    crumb,
+    el("h1", { class: "page-title" }, "Islamic Calendar"),
+    card,
+  ]);
+  app.appendChild(el("main", {}, wrap));
+
+  try {
+    const data = await qawFetchHijriDate(new Date());
+    const h = data.hijri;
+    const g = data.gregorian;
+
+    card.innerHTML = "";
+    card.appendChild(
+      el("div", { class: "ic-hijri" }, [
+        el("span", { class: "ic-hijri-day" }, h.day),
+        el("div", { class: "ic-hijri-mid" }, [
+          el("span", { class: "ic-hijri-month" }, `${h.month.en} ${h.year} AH`),
+          el("span", { class: "ic-hijri-ar", dir: "rtl" }, `${h.weekday.ar} \u00b7 ${h.month.ar} ${h.year}`),
+        ]),
+      ])
+    );
+
+    card.appendChild(
+      el("div", { class: "ic-gregorian" }, [
+        el("span", { class: "ic-gregorian-label" }, "Gregorian" ),
+        el("span", { class: "ic-gregorian-date" }, `${h.weekday.en}, ${g.day} ${g.month.en} ${g.year} CE`),
+      ])
+    );
+
+    if (h.holidays && h.holidays.length) {
+      card.appendChild(
+        el("div", { class: "ic-holidays" }, [
+          el("span", { class: "ic-holidays-label" }, "Today marks:"),
+          ...h.holidays.map((name) => el("span", { class: "ic-holiday-chip" }, name)),
+        ])
+      );
+    }
+
+    card.appendChild(
+      el(
+        "p",
+        { class: "pt-note" },
+        "Based on your device's local date and the standard Hijri calendar calculation. Moon-sighting announcements in your area may differ by a day \u2014 please confirm with your local masjid, especially around Ramadan and Eid."
+      )
+    );
+  } catch (e) {
+    card.innerHTML = "";
+    renderError(card, "Couldn't load today's Hijri date right now \u2014 try refreshing.");
+  }
+}
+
+/* --- Continuous recitation player: plays a whole surah, ayah by ayah ------
+   Separate from the study reader (/quran-text/*) - this is a simple,
+   podcast-style "listen straight through" page: pick a surah, hit Play, and
+   it recites every ayah in order (Arabic, then the Hinglish meaning spoken
+   aloud), auto-advancing down the list and optionally rolling into the next
+   surah when this one ends. */
+const QAW_AUTOPLAY_KEY = "qaw:playerAutoNext";
+
+function qawGetAutoNextPref() {
+  try {
+    return localStorage.getItem(QAW_AUTOPLAY_KEY) !== "off";
+  } catch (e) {
+    return true;
+  }
+}
+function qawSetAutoNextPref(on) {
+  try {
+    localStorage.setItem(QAW_AUTOPLAY_KEY, on ? "on" : "off");
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+async function renderQuranPlayer(surahNumber, opts) {
+  surahNumber = Math.max(1, Math.min(surahNumber, 114));
+  const autoplay = !!(opts && opts.autoplay);
+  const meta = SURAH_META[surahNumber];
+  const surahName = SURAH_NAMES[surahNumber] || `Surah ${surahNumber}`;
+
+  setMeta({
+    title: `Listen: ${surahName}`,
+    description: `Listen to ${surahName} recited in full, ayah by ayah, with the Hinglish meaning read aloud.`,
+  });
+
+  if (!opts || !opts.internalNav) {
+    app.innerHTML = "";
+  }
+
+  const crumb = el("p", { class: "crumb" }, [
+    el("a", { href: `${BASE_PATH}/` }, "Library"),
+    " / ",
+    el("a", { href: `${BASE_PATH}/quran-text/${meta.juz}` }, "Qur'an"),
+    " / Listen",
+  ]);
+
+  const prevLink = el(
+    "a",
+    { class: "pl-nav-btn", href: surahNumber > 1 ? `${BASE_PATH}/quran-play/${surahNumber - 1}` : "#", "aria-disabled": surahNumber <= 1 },
+    "\u2039 Prev surah"
+  );
+  const nextLink = el(
+    "a",
+    { class: "pl-nav-btn", href: surahNumber < 114 ? `${BASE_PATH}/quran-play/${surahNumber + 1}` : "#", "aria-disabled": surahNumber >= 114 },
+    "Next surah \u203a"
+  );
+
+  const header = el("div", { class: "pl-header" }, [
+    prevLink,
+    el("div", { class: "pl-header-mid" }, [
+      el("span", { class: "pl-header-kicker" }, `SURAH ${surahNumber}`),
+      el("h1", { class: "pl-header-title" }, surahName),
+      el("span", { class: "pl-header-ar", dir: "rtl" }, meta.ar),
+      el("p", { class: "pl-header-sub" }, `${meta.ayahs} ayat \u00b7 ${meta.type === "Meccan" ? "Makki" : "Madani"}`),
+    ]),
+    nextLink,
+  ]);
+
+  const playAllBtn = el("button", { class: "btn btn-primary pl-play-all", type: "button" }, "\u25b6 Play Surah");
+  const autoNextRow = el("label", { class: "pl-autonext" }, [
+    el("input", { type: "checkbox", id: "plAutoNext" }),
+    " Auto-play next surah when this one ends",
+  ]);
+  const autoNextCheckbox = autoNextRow.querySelector("input");
+  autoNextCheckbox.checked = qawGetAutoNextPref();
+  autoNextCheckbox.addEventListener("change", () => qawSetAutoNextPref(autoNextCheckbox.checked));
+
+  const controls = el("div", { class: "pl-controls" }, [playAllBtn, autoNextRow]);
+  const list = el("div", { class: "pl-list" });
+  renderLoading(list);
+
+  const wrap = el("div", { class: "container text-container pl-container" }, [crumb, header, controls, list]);
+
+  if (opts && opts.internalNav) {
+    const oldWrap = app.querySelector(".pl-container");
+    if (oldWrap) oldWrap.replaceWith(wrap);
+    else app.appendChild(el("main", {}, wrap));
+  } else {
+    app.appendChild(el("main", {}, wrap));
+  }
+
+  try {
+    const ayahs = await fetchSurahAyahs(surahNumber);
+    list.innerHTML = "";
+
+    const rows = ayahs.map((v, idx) =>
+      el("div", { class: "pl-row", id: `pl-${idx}` }, [
+        el("span", { class: "pl-row-num" }, String(v.a)),
+        el("div", { class: "pl-row-text" }, [
+          el("span", { class: "pl-row-ar", dir: "rtl" }, v.ar),
+          el("span", { class: "pl-row-translit" }, v.t),
+        ]),
+      ])
+    );
+    rows.forEach((r) => list.appendChild(r));
+
+    function setPlayingRow(idx) {
+      rows.forEach((r, i) => r.classList.toggle("is-playing", i === idx));
+      if (idx >= 0 && rows[idx]) rows[idx].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function playFrom(idx) {
+      if (idx >= ayahs.length) {
+        setPlayingRow(-1);
+        playAllBtn.textContent = "\u25b6 Play Surah";
+        if (qawGetAutoNextPref() && surahNumber < 114) {
+          const nextSurah = surahNumber + 1;
+          history.replaceState(null, "", `${BASE_PATH}/quran-play/${nextSurah}`);
+          renderQuranPlayer(nextSurah, { autoplay: true, internalNav: true });
+        }
+        return;
+      }
+      setPlayingRow(idx);
+      const v = ayahs[idx];
+      qawPlayAudioUrl(qawAyahAudioUrl(v.s, v.a), playAllBtn, "\u25b6 Play Surah", () => playFrom(idx + 1));
+    }
+
+    playAllBtn.addEventListener("click", () => {
+      if (qawAudioActiveBtn === playAllBtn) {
+        qawPlayAudioUrl(qawAudioActiveUrl, playAllBtn, "\u25b6 Play Surah"); // toggles pause/resume in place
+        return;
+      }
+      playFrom(0);
+    });
+
+    if (autoplay) playFrom(0);
+  } catch (e) {
+    list.innerHTML = "";
+    renderError(list, e.message);
+  }
+}
+
+
+/* =============================================================================
+   QuranAW — custom "Install app" banner (v1). Browsers that support the PWA
+   install prompt (Chrome/Edge/Samsung Internet on Android, desktop Chrome)
+   fire `beforeinstallprompt`; we suppress the browser's own popup and show
+   our own banner instead, triggering the same native prompt on click. iOS
+   Safari never fires that event and has no programmatic install API, so it
+   gets a one-time manual "Add to Home Screen" instruction instead.
+   ========================================================================== */
+const QAW_INSTALL_DISMISS_KEY = "qaw:installDismissed";
+let qawDeferredInstallPrompt = null;
+
+function qawIsStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true // iOS Safari's own flag
+  );
+}
+
+function qawIsIos() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+function qawWasInstallDismissed() {
+  try {
+    return localStorage.getItem(QAW_INSTALL_DISMISS_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function qawShowInstallBanner(text) {
+  const banner = document.getElementById("qawInstallBanner");
+  const textEl = document.getElementById("qawInstallText");
+  if (!banner) return;
+  if (text && textEl) textEl.textContent = text;
+  banner.style.display = "flex";
+}
+
+function qawHideInstallBanner() {
+  const banner = document.getElementById("qawInstallBanner");
+  if (banner) banner.style.display = "none";
+}
+
+function qawInitInstallPrompt() {
+  if (qawIsStandalone() || qawWasInstallDismissed()) return; // already installed, or user dismissed before
+
+  const installBtn = document.getElementById("qawInstallBtn");
+  const closeBtn = document.getElementById("qawInstallClose");
+  if (!installBtn || !closeBtn) return;
+
+  closeBtn.addEventListener("click", () => {
+    qawHideInstallBanner();
+    try {
+      localStorage.setItem(QAW_INSTALL_DISMISS_KEY, "1");
+    } catch (e) {
+      /* storage unavailable */
+    }
+  });
+
+  // Android/desktop Chrome-family browsers: suppress their native popup and
+  // show ours instead; clicking Install re-triggers the same real prompt.
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    qawDeferredInstallPrompt = e;
+    installBtn.textContent = "Install";
+    qawShowInstallBanner("Install QuranAW for quick, offline-ready access");
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (qawDeferredInstallPrompt) {
+      qawDeferredInstallPrompt.prompt();
+      try {
+        await qawDeferredInstallPrompt.userChoice;
+      } catch (e) {
+        /* dismissed */
+      }
+      qawDeferredInstallPrompt = null;
+      qawHideInstallBanner();
+      return;
+    }
+    if (qawIsIos()) {
+      qawShowInstallBanner('Tap the Share icon, then "Add to Home Screen"');
+    }
+  });
+
+  window.addEventListener("appinstalled", () => {
+    qawDeferredInstallPrompt = null;
+    qawHideInstallBanner();
+  });
+
+  // iOS Safari never fires beforeinstallprompt - offer manual instructions
+  // instead, once, unless already dismissed or already installed.
+  if (qawIsIos() && !qawIsStandalone()) {
+    qawShowInstallBanner("Add QuranAW to your Home Screen for quick access");
+    installBtn.textContent = "How?";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  qawInitThemeToggle();
+  qawInitTopSearch();
+  qawInitSidebarToggle();
+  qawRefreshSidebarChrome();
+  qawInitPrayerTimes();
+  qawInitInstallPrompt();
 });
