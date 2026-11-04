@@ -3598,6 +3598,147 @@ function qawInitInstallPrompt() {
   }
 }
 
+/* =============================================================================
+   QuranAW — "Hadith of the Day" push notifications (v1).
+   Registers sw.js, and after the visitor taps "Allow" saves their push
+   subscription to Supabase (via the qaw_push_subscribe RPC). A GitHub Action
+   then sends one hadith every morning at ~6:30 AM IST.
+   Browsers only allow this after an explicit user tap, and iPhone/iPad only
+   support it once the site is installed to the Home Screen (iOS 16.4+).
+   ========================================================================== */
+const QAW_PUSH_DISMISS_KEY = "qaw:pushDismissed";
+const QAW_PUSH_SITE = BASE_PATH ? "uat" : "live";
+
+function qawPushConfig() {
+  const p = (cfg && cfg.push) || {};
+  return p.supabaseUrl && p.supabaseKey && p.vapidPublicKey ? p : null;
+}
+
+function qawPushSupported() {
+  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+}
+
+function qawUrlBase64ToUint8Array(base64) {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+async function qawPushRpc(fn, body) {
+  const p = qawPushConfig();
+  const res = await fetch(`${p.supabaseUrl}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: p.supabaseKey },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Push ${fn} failed (${res.status})`);
+}
+
+async function qawSaveSubscription(sub) {
+  const json = sub.toJSON();
+  await qawPushRpc("qaw_push_subscribe", {
+    p_endpoint: json.endpoint,
+    p_p256dh: json.keys.p256dh,
+    p_auth: json.keys.auth,
+    p_site: QAW_PUSH_SITE,
+  });
+}
+
+async function qawEnablePush() {
+  const p = qawPushConfig();
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return false;
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: qawUrlBase64ToUint8Array(p.vapidPublicKey),
+    });
+  }
+  await qawSaveSubscription(sub);
+  return true;
+}
+
+function qawShowPushBanner() {
+  const banner = document.getElementById("qawPushBanner");
+  const installBanner = document.getElementById("qawInstallBanner");
+  if (!banner) return;
+  // Never stack on top of the install banner - wait until it's gone.
+  if (installBanner && installBanner.style.display !== "none") {
+    setTimeout(qawShowPushBanner, 15000);
+    return;
+  }
+  banner.style.display = "flex";
+}
+
+async function qawInitPush() {
+  if (!qawPushSupported() || !qawPushConfig()) return;
+
+  let reg;
+  try {
+    reg = await navigator.serviceWorker.register(`${BASE_PATH}/sw.js`, { scope: `${BASE_PATH}/` });
+  } catch (e) {
+    return; // e.g. private mode - site works fine without it
+  }
+
+  // Already subscribed: quietly re-save, so a refreshed/rotated subscription
+  // is never lost (the RPC is an upsert, so this is harmless).
+  if (Notification.permission === "granted") {
+    try {
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await qawSaveSubscription(sub);
+    } catch (e) {
+      /* offline - try again next visit */
+    }
+    return;
+  }
+
+  if (Notification.permission === "denied") return;
+  try {
+    if (localStorage.getItem(QAW_PUSH_DISMISS_KEY) === "1") return;
+  } catch (e) {
+    /* storage unavailable */
+  }
+
+  const banner = document.getElementById("qawPushBanner");
+  const btn = document.getElementById("qawPushBtn");
+  const closeBtn = document.getElementById("qawPushClose");
+  const textEl = document.getElementById("qawPushText");
+  if (!banner || !btn || !closeBtn) return;
+
+  closeBtn.addEventListener("click", () => {
+    banner.style.display = "none";
+    try {
+      localStorage.setItem(QAW_PUSH_DISMISS_KEY, "1");
+    } catch (e) {
+      /* storage unavailable */
+    }
+  });
+
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+      const ok = await qawEnablePush();
+      if (ok) {
+        if (textEl) textEl.textContent = "JazakAllah! Kal subah se roz ek hadith aayegi.";
+        btn.style.display = "none";
+        setTimeout(() => (banner.style.display = "none"), 3500);
+      } else {
+        banner.style.display = "none";
+      }
+    } catch (e) {
+      if (textEl) textEl.textContent = "Abhi enable nahi ho saka, baad mein dobara koshish karein.";
+      btn.disabled = false;
+      btn.textContent = "Allow";
+    }
+  });
+
+  // Give the visitor a moment with the page before asking.
+  setTimeout(qawShowPushBanner, 8000);
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   qawInitThemeToggle();
   qawInitTopSearch();
@@ -3605,4 +3746,5 @@ window.addEventListener("DOMContentLoaded", () => {
   qawRefreshSidebarChrome();
   qawInitPrayerTimes();
   qawInitInstallPrompt();
+  qawInitPush();
 });
