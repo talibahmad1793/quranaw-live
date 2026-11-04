@@ -12,4 +12,12 @@ window.SITE_CONFIG = {
   // Change this to your own address.
   // main Email Talibahmad1793@gmail.com
   contactEmail: "support@quranaw.com",
+  // "Hadith of the Day" push notifications. The Supabase key here is the
+  // PUBLISHABLE (public) key - it can only call the subscribe/unsubscribe
+  // functions, never read the subscriber list.
+  push: {
+    supabaseUrl: "https://mshgcjyiouiobftrhykl.supabase.co",
+    supabaseKey: "sb_publishable__lo5bUTmDwIcg5EgtgGr5A_idWtoT5h",
+    vapidPublicKey: "BBNwhu4H3N7b04IdrkDSUAT0eQPMfHOmymp-oA3qNrcIS9WYFsBWH1iDURj6kPy8vJqimEtlyE_FKBu528OlMQU",
+  },
 };
